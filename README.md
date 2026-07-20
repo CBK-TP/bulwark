@@ -9,6 +9,7 @@ Free is the public scanner. Paid editions add monitoring, history, alerts, panel
 ## What Bulwark Free Does
 
 - Audits common Minecraft server risks from one command.
+- Runs anywhere your server does — VPS, dedicated, or a game-server panel like Pterodactyl or Multicraft. It reads files, so it needs no host access.
 - Detects Bukkit/Paper/Folia context, common hybrid loaders and modded-server evidence.
 - Checks access posture, proxy safety, RCON/query exposure, OPs, command surface, plugin jars, datapacks and basic host file permissions.
 - Writes reports, Markdown output and a local badge under `plugins/Bulwark/`.
