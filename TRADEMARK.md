@@ -2,7 +2,7 @@
 
 The Apache License 2.0 covers the code in this repository. It does not grant trademark rights.
 
-Cobayka reserves the Bulwark name, the Cobayka name, the Cobayka Hardening Baseline name, the CHB abbreviation when used for that baseline, and official Bulwark badge wording or artwork.
+Cobayka reserves the Bulwark name, the Cobayka name, the Cobayka Hardening Baseline name, the CHB abbreviation when used for that baseline, and official Bulwark badge wording or artwork. These marks are used and asserted by Cobayka as of the first public release of this project (2026). We write them as Bulwark™ and Cobayka™ to signal that claim; the absence of the symbol elsewhere is not a waiver.
 
 You may:
 
