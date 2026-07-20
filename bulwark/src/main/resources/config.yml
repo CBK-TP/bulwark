@@ -1,0 +1,102 @@
+# Bulwark - server security & configuration audit
+#
+# Bulwark reads your server's config (server.properties, spigot.yml, the Paper config and
+# bukkit.yml), its operator list, the installed plugins and even the OS file permissions, then
+# reports the security risks it finds with a clear fix for each - a letter grade overall and a
+# sub-grade per area, mapped to the Cobayka Hardening Baseline (CHB) so you can cite them.
+# Free does not edit server.properties, disable plugins, delete jars or change third-party
+# plugin data. It only writes Bulwark's own config, consent marker, reports, badge, language
+# overrides and plugin trust baseline under plugins/Bulwark/.
+#
+# Run /bulwark for a summary, /bulwark full for every finding, /bulwark report to save a shareable
+# report (.txt + Markdown). After any change here, run /bulwark reload.
+
+# Language for all of Bulwark's messages (audit findings, reports, commands).
+#   Built in: en (English), es (Spanish), de (German), fr (French).
+# English is always the fallback, so a missing line in another language still shows in English.
+# Want another language, or to tweak the wording? Drop a file in plugins/Bulwark/lang/<code>.yml
+# (e.g. lang/it.yml) - it overrides the built-in bundle key by key, no restart of anything else needed.
+language: en
+
+# Run an audit automatically when the server starts and log a one-line summary.
+scan-on-start: true
+
+# Title shown at the top of every report. Make it your own to white-label the audit.
+report-title: "Bulwark security audit"
+
+# Server posture profile. auto infers from local evidence and reports that evidence; set an explicit
+# value if you know the server role better. Valid: auto, public-survival, private-smp, minigame,
+# creative-build, proxy-backend, modded.
+security-profile: auto
+security-profile-confirmed: false
+
+# Update check - tells you (console, and on the paid tiers the webhook + panel) when a newer Bulwark
+# is out. It NEVER downloads or replaces the jar: auto-updating a jar from a URL is the exact
+# supply-chain risk Bulwark audits for, so you download the update yourself. Point 'url' at your
+# resource's version endpoint (e.g. SpigotMC https://api.spigotmc.org/legacy/update.php?resource=ID,
+# which returns the bare version; a JSON body with a "version" field also works). Blank = off.
+updates:
+  check: true
+  url: ""
+  interval-hours: 24
+
+# Optional external advisory checks. Disabled by default because checks send jar hashes and names
+# to public services when an admin explicitly runs /bulwark artifact check <name>.
+advisory:
+  enabled: false
+  modrinth: true
+  github-advisories: true
+  timeout-ms: 5000
+# Numbers used by some checks.
+thresholds:
+  # Warn when there are more than this many server operators (ops).
+  max-operators: 3
+  # Warn above this view-distance (performance + DoS surface).
+  max-view-distance: 10
+  # Warn above this simulation-distance. Defaults to max-view-distance if unset.
+  max-simulation-distance: 10
+  # Flag an RCON password shorter than this many characters as weak.
+  rcon-min-password: 12
+
+# Scan consent (opt-in). Bulwark reads NOTHING until you authorize it - neither this server's
+# own config nor the host (file permissions, the OS user it runs as, JVM heap vs. RAM). Every
+# read is local and read-only, and nothing ever leaves the machine.
+# Authorize in-game with /bulwark consent (or set this true here, then /bulwark reload).
+scan-consent: false
+
+# Finding IDs to SKIP entirely (silence). Full list of IDs:
+#   no-server-properties, offline-mode, offline-mode-login, offline-mode-proxy,
+#   rcon-no-password, rcon-weak-password, rcon-enabled, query-enabled,
+#   query-plugins, insecure-chat, no-whitelist, whitelist-not-enforced, no-rate-limit,
+#   no-spawn-protection, high-view-distance, high-simulation-distance, many-operators,
+#   bungeecord-mode, velocity-no-secret, unsupported-exploit, watchdog-off,
+#   watchdog-max-tick, old-java, log4shell, duplicate-plugins, plugin-trust-drift,
+#   high-function-permission-level, high-op-permission-level, command-blocks-enabled,
+#   command-surface-unavailable, command-disclosure-public, command-namespace-op-reachable,
+#   command-shadowed-alias, command-plugin-manager-risk, command-dangerous-default-permission,
+#   command-lifecycle-exposed, command-tabcomplete-disclosure,
+#   posture-profile-auto, posture-profile-invalid, posture-profile-unconfirmed,
+#   profile-private-whitelist-open, proxy-backend-firewall-unverified, loader-runtime-detected,
+#   loader-anticheat-context,
+#   anti-xray-off-public-survival, floodgate-key-readable, floodgate-key-writable,
+#   geyser-auth-type-mismatch,
+#   resource-pack-no-sha, no-proxy-protection, console-all-permissions, bad-username-validation,
+#   jmx-enabled, accepts-transfers, floodgate-online-mode,
+#   host-readable-secret, host-writable-plugins, process-as-root, host-writable-root,
+#   host-readable-ops, jvm-heap (host/system checks - only run with /bulwark consent),
+#   forge-mod-surface, artifact-mods-present, artifact-mods-without-loader, artifact-misplaced-jar, artifact-unknown-jar, artifact-root-loadable-jar, artifact-invalid-datapack, artifact-datapack-functions-elevated, artifact-writable-loadable,
+#   gap-no-anticheat, gap-no-logging, gap-no-backup
+# Example: ['query-enabled', 'high-view-distance']
+ignore: []
+
+# Re-rate specific findings to match YOUR security posture (any ID from the list above).
+# Valid levels: CRITICAL, HIGH, MEDIUM, LOW, INFO. (INFO never affects the grade.)
+# Example:
+# severity-overrides:
+#   offline-mode: HIGH
+#   no-whitelist: INFO
+severity-overrides: {}
+
+# Shown at the bottom of every report. Make it your own (a support link, your site,
+# "DM me", etc.). Use & for colours. Leave empty to hide it.
+support-message: "&7Need a hand hardening these? This audit was built by &bCobayka&7."

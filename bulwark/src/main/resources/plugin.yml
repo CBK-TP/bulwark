@@ -1,0 +1,18 @@
+name: Bulwark
+version: 1.0.0
+main: es.cobayka.bulwark.BulwarkPlugin
+api-version: '1.13'
+author: Cobayka
+description: Audits your server's security & configuration - server.properties, Paper/Spigot, ops, plugins and OS file permissions - with a letter grade, per-area sub-grades and a shareable report. Each risk comes with a clear fix.
+folia-supported: true
+
+commands:
+  bulwark:
+    description: Run a server security audit.
+    usage: /bulwark <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload|help>
+    aliases: [secaudit, bw]
+
+permissions:
+  bulwark.admin:
+    description: Run and manage Bulwark security audits.
+    default: op
