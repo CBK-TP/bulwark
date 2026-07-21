@@ -448,9 +448,9 @@ final class AuditEngine {
         if (ops > max) {
             Severity sev = ops > max * 3 ? Severity.HIGH : Severity.MEDIUM;
             add(l, "many-operators", "access", sev,
-                    "Many server operators (" + ops + ")",
-                    "There are " + ops + " ops. Every op has full, unchecked control of the server and console - a large attack surface if any one of those accounts is compromised.",
-                    "Keep ops to the few who truly need full control; give everyone else scoped access with a permissions plugin (LuckPerms).");
+                    "Many server operators ({0})",
+                    "There are {0} ops. Every op has full, unchecked control of the server and console - a large attack surface if any one of those accounts is compromised.",
+                    "Keep ops to the few who truly need full control; give everyone else scoped access with a permissions plugin (LuckPerms).", ops);
         }
     }
 
@@ -625,9 +625,10 @@ final class AuditEngine {
         if (major > 0 && major < 17) {
             Severity sev = major < 11 ? Severity.MEDIUM : Severity.LOW;
             add(l, "old-java", "runtime", sev,
-                    "Outdated Java (" + System.getProperty("java.version", "?") + ")",
-                    "You're on Java " + major + ". Older Java misses security patches and performance work; modern Minecraft (1.18+) needs Java 17+.",
-                    "Update to a current LTS Java (17 or 21) that matches your Minecraft version.");
+                    "Outdated Java ({0})",
+                    "You're on Java {1}. Older Java misses security patches and performance work; modern Minecraft (1.18+) needs Java 17+.",
+                    "Update to a current LTS Java (17 or 21) that matches your Minecraft version.",
+                    System.getProperty("java.version", "?"), major);
         }
 
         String mc = mcVersion();
@@ -1086,15 +1087,15 @@ final class AuditEngine {
         }
     }
 
-    private static boolean equals(Properties p, String key, String expected) {
+    static boolean equals(Properties p, String key, String expected) {
         return expected.equalsIgnoreCase(p.getProperty(key, "").trim());
     }
 
-    private static String value(Properties p, String key) {
+    static String value(Properties p, String key) {
         return p.getProperty(key, "").trim();
     }
 
-    private static int intValue(Properties p, String key, int def) {
+    static int intValue(Properties p, String key, int def) {
         try {
             return Integer.parseInt(p.getProperty(key, "").trim());
         } catch (Exception e) {
@@ -1111,7 +1112,7 @@ final class AuditEngine {
         }
     }
 
-    private static int parseJavaMajor(String v) {
+    static int parseJavaMajor(String v) {
         try {
             if (v.startsWith("1.")) {
                 return Integer.parseInt(v.split("\\.")[1]); // 1.8.0_x -> 8
@@ -1126,7 +1127,7 @@ final class AuditEngine {
         }
     }
 
-    private static int[] parseVersion(String v) {
+    static int[] parseVersion(String v) {
         try {
             String[] parts = v.split("\\.");
             int[] out = new int[]{0, 0, 0};
@@ -1139,7 +1140,7 @@ final class AuditEngine {
         }
     }
 
-    private static boolean isBefore(int[] a, int[] b) {
+    static boolean isBefore(int[] a, int[] b) {
         for (int i = 0; i < 3; i++) {
             if (a[i] < b[i]) {
                 return true;
