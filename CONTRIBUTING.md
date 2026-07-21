@@ -24,4 +24,4 @@ Do not include license keys, webhook URLs, passwords, private IP lists or custom
 
 ## Continuous integration
 
-The build/leak-check workflow lives in `docs/ci/build.yml`. To enable it, copy it to `.github/workflows/build.yml` (adding workflows requires a token with the `workflow` scope, or the GitHub web editor).
+CI runs on every push and pull request via `.github/workflows/build.yml`. It builds the plugin, runs the tests, and checks that the jar does not ship source, docs or internal files. Nothing to set up — if your change builds cleanly with `mvn test package`, it will pass.

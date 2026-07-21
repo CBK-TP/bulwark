@@ -22,7 +22,7 @@ Free does not edit `server.properties`, disable plugins, delete jars or change t
 
 Requirements:
 
-- JDK 17 to build
+- JDK 17 or newer to build
 - Maven 3.9+
 - The built plugin targets Java 8 bytecode
 
