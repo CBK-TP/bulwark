@@ -83,18 +83,18 @@ scan-consent: false
 #   high-function-permission-level, high-op-permission-level, command-blocks-enabled,
 #   command-surface-unavailable, command-disclosure-public, command-namespace-op-reachable,
 #   command-shadowed-alias, command-plugin-manager-risk, command-dangerous-default-permission,
-#   command-lifecycle-exposed, command-tabcomplete-disclosure,
+#   command-lifecycle-exposed, command-tabcomplete-disclosure, permission-summary,
 #   posture-profile-auto, posture-profile-invalid, posture-profile-unconfirmed,
 #   profile-private-whitelist-open, proxy-backend-firewall-unverified, loader-runtime-detected,
 #   loader-anticheat-context,
-#   anti-xray-off-public-survival, floodgate-key-readable, floodgate-key-writable,
+#   anti-xray-posture, floodgate-key-readable, floodgate-key-writable,
 #   geyser-auth-type-mismatch,
 #   resource-pack-no-sha, no-proxy-protection, console-all-permissions, bad-username-validation,
 #   jmx-enabled, accepts-transfers, floodgate-online-mode,
 #   host-readable-secret, host-writable-plugins, process-as-root, host-writable-root,
 #   host-readable-ops, jvm-heap (host/system checks - only run with /bulwark consent),
 #   forge-mod-surface, artifact-mods-present, artifact-mods-without-loader, artifact-misplaced-jar, artifact-unknown-jar, artifact-root-loadable-jar, artifact-invalid-datapack, artifact-datapack-functions-elevated, artifact-writable-loadable,
-#   gap-no-anticheat, gap-no-logging, gap-no-backup
+#   gap-no-anticheat, gap-no-logging, backup-readiness
 # Example: ['query-enabled', 'high-view-distance']
 ignore: []
 

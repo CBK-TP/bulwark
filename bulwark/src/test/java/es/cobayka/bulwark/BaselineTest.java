@@ -23,6 +23,9 @@ public class BaselineTest {
         assertEquals("CHB-H3", Baseline.code("process-as-root"));
         assertEquals("CHB-D1", Baseline.code("no-rate-limit"));
         assertEquals("CHB-D9", Baseline.code("connection-throttle-off"));
+        assertEquals("CHB-D10", Baseline.code("backup-readiness"));
+        assertEquals("CHB-D11", Baseline.code("anti-xray-posture"));
+        assertEquals("CHB-D12", Baseline.code("permission-summary"));
         assertEquals("CHB-L1", Baseline.code("log-jndi-probe"));
     }
 
@@ -47,7 +50,10 @@ public class BaselineTest {
                 "process-as-root",
                 "no-rate-limit",
                 "high-view-distance",
-                "connection-throttle-off");
+                "connection-throttle-off",
+                "backup-readiness",
+                "anti-xray-posture",
+                "permission-summary");
 
         for (String id : sample) {
             String code = Baseline.code(id);

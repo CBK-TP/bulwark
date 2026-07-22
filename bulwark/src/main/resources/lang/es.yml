@@ -79,10 +79,6 @@ findings:
     title: "No se detecta ningún anti-cheat"
     detail: "Bulwark audita la configuración, no las trampas de juego. No se encontró ningún plugin anti-cheat."
     fix: "Considera Grim (gratis) o Vulcan si los jugadores pueden hacer trampas en este servidor."
-  gap-no-backup:
-    title: "No se detecta ningún plugin de copias de seguridad"
-    detail: "No se encontró ningún plugin de copias de seguridad. (Puedes seguir haciendo copias con snapshots del host o cron; esto solo comprueba si hay un plugin.)"
-    fix: "Considera un plugin de copias de seguridad, o asegúrate de que las copias se hacen de otra forma."
   gap-no-logging:
     title: "No se detecta ningún registro de cambios"
     detail: "No se encontró ningún registro de bloques/inventarios, así que no puedes revertir ni rastrear grief y robos a posteriori."
@@ -135,10 +131,6 @@ findings:
     detail: "Existen etiquetas sensibles en el command map ({0}). Si tab-complete esta abierto a jugadores, esos nombres pueden filtrarse aunque la ejecucion siga protegida por permisos."
     fix: "Si ocultar comandos importa en este servidor, restringe sugerencias de tab-complete con tu plataforma o permisos."
     title: "Tab-complete puede revelar comandos sensibles"
-  anti-xray-off-public-survival:
-    detail: "Bulwark pudo leer la configuración Anti-Xray de Paper y está desactivada mientras el perfil activo es public-survival. Bulwark no sustituye a un anti-cheat, pero es un control útil de postura en survival."
-    fix: "Activa Paper Anti-Xray si la visibilidad de minerales importa en este servidor, y prueba el modo de motor y el impacto en rendimiento antes de producción."
-    title: "Paper Anti-Xray está desactivado para un perfil survival público"
   floodgate-key-readable:
     detail: "{0} puede ser leído por otros usuarios locales. Las claves de Floodgate autentican el forwarding de identidad Bedrock, así que una clave filtrada amplía el impacto de spoofing de cuentas."
     fix: "Restringe la clave para que solo el usuario del servidor Minecraft pueda leerla, y rótala si sospechas que se expuso."
@@ -367,6 +359,18 @@ findings:
     detail: "bukkit.yml settings.connection-throttle={0} desactiva la espera de reconexion por IP de Bukkit. En un servidor standalone abarata los join-floods; Bulwark suprime este hallazgo cuando hay forwarding de proxy configurado porque los backends suelen desactivarlo a proposito."
     fix: "Pon settings.connection-throttle en un valor positivo como 4000 salvo que este servidor sea un backend detras de un proxy bien cerrado por firewall."
     title: "connection-throttle esta desactivado"
+  backup-readiness:
+    detail: "Bulwark no ha encontrado un plugin de backups conocido. Es solo una comprobacion local de plugins; aun puedes tener snapshots del host, backups del panel o cron jobs fuera del servidor."
+    fix: "Mantén backups off-site regulares y prueba una restauracion de vez en cuando. Si los backups se gestionan fuera de Minecraft, dejalo documentado fuera de la lista de plugins."
+    title: "No hay evidencia de backups en plugins"
+  anti-xray-posture:
+    detail: "{0} indica {1}. Esto puede exponer minerales a clientes x-ray; Bulwark lo muestra como aviso porque anti-xray puede ser una decision de rendimiento o gameplay."
+    fix: "Si te importa ocultar minerales, activa Paper Anti-Xray y prueba engine-mode 2 para esta version de Minecraft/Paper. Si no, documenta el motivo e ignora este aviso."
+    title: "La postura de Paper Anti-Xray necesita revision"
+  permission-summary:
+    detail: "Bulwark encontro nodos de permiso crudos declarados en metadatos de comandos sensibles: {0}. Es solo informacion; no prueba que ningun jugador o grupo tenga esos permisos ahora mismo."
+    fix: "Revisa esos nodos en tu plugin de permisos y prueba los permisos efectivos con una cuenta sin staff."
+    title: "Nodos de permiso en comandos sensibles"
   rcon-enabled:
     detail: "La consola remota está activada. Incluso con una contraseña fuerte, un puerto de RCON expuesto es un riesgo de control remoto."
     fix: "Cierra el puerto de RCON por firewall para que solo tú puedas alcanzarlo, o desactívalo cuando no lo uses."

@@ -122,10 +122,6 @@ findings:
     detail: "Sensitive command labels exist in the command map ({0}). If tab-complete is open to players, those names can be disclosed even when execution is still permission-protected."
     fix: "If command secrecy matters on this server, restrict tab-complete suggestions with your platform/permissions setup."
     title: "Tab-complete can reveal sensitive command names"
-  anti-xray-off-public-survival:
-    detail: "Bulwark could read Paper's Anti-Xray setting and it is disabled while the active profile is public-survival. Bulwark does not replace anti-cheat, but this is a useful survival-server posture control."
-    fix: "Enable Paper Anti-Xray if ore visibility matters on this server, and test the engine mode and performance impact before production."
-    title: "Paper Anti-Xray is off for a public survival profile"
   floodgate-key-readable:
     detail: "{0} can be read by other local users. Floodgate keys authenticate Bedrock identity forwarding, so leaked keys widen account-spoofing impact."
     fix: "Restrict the key so only the Minecraft server user can read it, and rotate it if you suspect it was exposed."
@@ -254,10 +250,6 @@ findings:
     detail: "Bulwark audits configuration, not gameplay cheating. No anti-cheat plugin was found."
     fix: "Consider Grim (free) or Vulcan if players can cheat on this server."
     title: "No anti-cheat detected"
-  gap-no-backup:
-    detail: "No backup plugin was found. (You may still back up with host snapshots or cron - this only checks for a plugin.)"
-    fix: "Consider a backup plugin, or make sure backups run another way."
-    title: "No backup plugin detected"
   gap-no-logging:
     detail: "No block/inventory logger was found, so you can't roll back or trace grief and theft after the fact."
     fix: "Consider CoreProtect (free) for forensic rollback."
@@ -366,6 +358,18 @@ findings:
     detail: "bukkit.yml settings.connection-throttle={0} disables Bukkit's per-IP reconnect delay. On a standalone server that makes join-floods cheaper; Bulwark suppresses this finding when proxy forwarding is configured because proxy backends often disable it deliberately."
     fix: "Set settings.connection-throttle to a positive value such as 4000 unless this server is a backend behind a correctly firewalled proxy."
     title: "Connection throttle is disabled"
+  backup-readiness:
+    detail: "Bulwark did not find a known backup plugin. This is only a local plugin check; you may still have host snapshots, panel backups or cron jobs outside the server."
+    fix: "Keep regular off-site backups and periodically test a restore. If backups are handled outside Minecraft, document that outside the plugin list."
+    title: "No backup evidence found in plugins"
+  anti-xray-posture:
+    detail: "{0} reports {1}. This can expose ore placement to x-ray clients; Bulwark reports it as advisory because anti-xray can be a performance or gameplay tradeoff."
+    fix: "If ore secrecy matters, enable Paper Anti-Xray and test engine-mode 2 for this Minecraft/Paper version. Otherwise document the reason and ignore this advisory."
+    title: "Paper Anti-Xray posture needs review"
+  permission-summary:
+    detail: "Bulwark found raw permission nodes declared on sensitive command metadata: {0}. This is informational only; it does not prove any player or group currently has those permissions."
+    fix: "Review these nodes in your permissions plugin and test the effective permissions with a non-staff account."
+    title: "Sensitive command permission nodes found"
   rcon-enabled:
     detail: "Remote console is on. Even with a strong password, an exposed RCON port is a remote-control risk."
     fix: "Firewall the RCON port so only you can reach it, or disable it when unused."

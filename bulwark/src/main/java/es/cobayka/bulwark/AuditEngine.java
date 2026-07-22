@@ -90,6 +90,7 @@ final class AuditEngine {
         checkOperators(all);
         checkSpigot(all);
         checkPaper(all);
+        checkAntiXrayPosture(all);
         checkBukkit(props, all);
         checkCommandSurface(all);
         checkRuntime(all);
@@ -248,14 +249,6 @@ final class AuditEngine {
                     "Proxy backend exposure cannot be proven locally",
                     "Bulwark detected a proxy-backend profile. From inside Bukkit it can read forwarding config, but it cannot prove that the backend port is firewalled from the public internet.",
                     "Confirm at the firewall or panel level that only the proxy can reach this backend port.");
-        }
-
-        Boolean antiXray = paperAntiXrayEnabled();
-        if (posture.is("public-survival") && antiXray != null && !antiXray) {
-            add(l, "anti-xray-off-public-survival", "world", Severity.LOW,
-                    "Paper Anti-Xray is off for a public survival profile",
-                    "Bulwark could read Paper's Anti-Xray setting and it is disabled while the active profile is public-survival. Bulwark does not replace anti-cheat, but this is a useful survival-server posture control.",
-                    "Enable Paper Anti-Xray if ore visibility matters on this server, and test the engine mode and performance impact before production.");
         }
 
         checkFloodgatePosture(l);
@@ -620,6 +613,15 @@ final class AuditEngine {
                     CommandSurface.examples(lifecycle, 6));
         }
 
+        String permissionNodes = permissionSummary(surface.riskyEntries(), 8);
+        if (!permissionNodes.isEmpty()) {
+            add(l, "permission-summary", "advisory-tools", Severity.INFO,
+                    "Sensitive command permission nodes found",
+                    "Bulwark found raw permission nodes declared on sensitive command metadata: {0}. This is informational only; it does not prove any player or group currently has those permissions.",
+                    "Review these nodes in your permissions plugin and test the effective permissions with a non-staff account.",
+                    permissionNodes);
+        }
+
         List<CommandSurface.Entry> tabTargets = surface.tabCompleteTargets();
         if (tabCompleteLikelyEnabled() && !tabTargets.isEmpty()) {
             add(l, "command-tabcomplete-disclosure", "core", Severity.INFO,
@@ -906,10 +908,12 @@ final class AuditEngine {
                 "No change logger detected",
                 "No block/inventory logger was found, so you can't roll back or trace grief and theft after the fact.",
                 "Consider CoreProtect (free) for forensic rollback.");
-        gap(l, PluginRegistry.Category.BACKUP, "gap-no-backup",
-                "No backup plugin detected",
-                "No backup plugin was found. (You may still back up with host snapshots or cron - this only checks for a plugin.)",
-                "Consider a backup plugin, or make sure backups run another way.");
+        if (backupReadinessMissing(reg)) {
+            add(l, "backup-readiness", "advisory-tools", Severity.INFO,
+                    "No backup evidence found in plugins",
+                    "Bulwark did not find a known backup plugin. This is only a local plugin check; you may still have host snapshots, panel backups or cron jobs outside the server.",
+                    "Keep regular off-site backups and periodically test a restore. If backups are handled outside Minecraft, document that outside the plugin list.");
+        }
     }
 
     /** Adds an INFO recommendation only if no plugin in that category is installed. */
@@ -951,6 +955,98 @@ final class AuditEngine {
         return String.join(", ", parts);
     }
 
+    private void checkAntiXrayPosture(List<Finding> l) {
+        if (profile == null || !profile.paper) {
+            return;
+        }
+        AntiXrayState state = paperAntiXrayState();
+        String problem = antiXrayPostureProblem(state);
+        if (problem.isEmpty()) {
+            return;
+        }
+        add(l, "anti-xray-posture", "reliability", Severity.LOW,
+                "Paper Anti-Xray posture needs review",
+                "{0} reports {1}. This can expose ore placement to x-ray clients; Bulwark reports it as advisory because anti-xray can be a performance or gameplay tradeoff.",
+                "If ore secrecy matters, enable Paper Anti-Xray and test engine-mode 2 for this Minecraft/Paper version. Otherwise document the reason and ignore this advisory.",
+                state.source, problem);
+    }
+
+    private AntiXrayState paperAntiXrayState() {
+        YamlConfiguration modern = env.yaml("config/paper-world-defaults.yml", "paper-world-defaults.yml");
+        YamlConfiguration paper = env.yaml("paper.yml");
+        YamlConfiguration world = env.yaml("world/paper-world.yml");
+        return firstAntiXrayState(
+                antiXrayState(modern, "paper-world-defaults.yml", "anticheat.anti-xray"),
+                antiXrayState(paper, "paper.yml", "world-settings.default.anti-xray"),
+                antiXrayState(paper, "paper.yml", "settings.anti-xray"),
+                antiXrayState(world, "world/paper-world.yml", "anticheat.anti-xray"));
+    }
+
+    static AntiXrayState antiXrayState(YamlConfiguration yaml, String source, String basePath) {
+        if (yaml == null || basePath == null || basePath.trim().isEmpty()) {
+            return AntiXrayState.absent();
+        }
+        String enabledPath = basePath + ".enabled";
+        String enginePath = basePath + ".engine-mode";
+        boolean hasEnabled = yaml.contains(enabledPath);
+        boolean hasEngine = yaml.contains(enginePath);
+        if (!hasEnabled && !hasEngine) {
+            return AntiXrayState.absent();
+        }
+        Boolean enabled = hasEnabled ? Boolean.valueOf(yaml.getBoolean(enabledPath, false)) : null;
+        Integer engineMode = hasEngine ? Integer.valueOf(yaml.getInt(enginePath, 0)) : null;
+        return new AntiXrayState(true, enabled, engineMode, source == null ? "" : source);
+    }
+
+    static String antiXrayPostureProblem(AntiXrayState state) {
+        if (state == null || !state.present) {
+            return "";
+        }
+        if (Boolean.FALSE.equals(state.enabled)) {
+            return "anti-xray.enabled=false";
+        }
+        if (Boolean.TRUE.equals(state.enabled) && state.engineMode != null && state.engineMode.intValue() <= 1) {
+            return "anti-xray.enabled=true with engine-mode=" + state.engineMode;
+        }
+        return "";
+    }
+
+    private static AntiXrayState firstAntiXrayState(AntiXrayState... states) {
+        if (states != null) {
+            for (AntiXrayState state : states) {
+                if (state != null && state.present) {
+                    return state;
+                }
+            }
+        }
+        return AntiXrayState.absent();
+    }
+
+    static boolean backupReadinessMissing(PluginRegistry registry) {
+        return registry != null && !registry.has(PluginRegistry.Category.BACKUP);
+    }
+
+    static String permissionSummary(List<CommandSurface.Entry> entries, int max) {
+        if (entries == null || entries.isEmpty() || max <= 0) {
+            return "";
+        }
+        List<String> parts = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (CommandSurface.Entry e : entries) {
+            if (e == null || !e.risky() || e.permission.isEmpty()) {
+                continue;
+            }
+            String raw = e.permission + " (" + e.key + " / " + e.owner + ")";
+            if (seen.add(raw) && parts.size() < max) {
+                parts.add(raw);
+            }
+        }
+        if (seen.size() > parts.size()) {
+            parts.add("+" + (seen.size() - parts.size()) + " more");
+        }
+        return String.join(", ", parts);
+    }
+
     private boolean behindProxy() {
         YamlConfiguration spigot = env.yaml("spigot.yml");
         if (spigot != null && spigot.getBoolean("settings.bungeecord", false)) {
@@ -983,21 +1079,6 @@ final class AuditEngine {
             }
         }
         return false;
-    }
-
-    private Boolean paperAntiXrayEnabled() {
-        YamlConfiguration modern = env.yaml("config/paper-world-defaults.yml", "paper-world-defaults.yml");
-        Boolean value = yamlBool(modern, "anticheat.anti-xray.enabled");
-        if (value != null) {
-            return value;
-        }
-        YamlConfiguration paper = env.yaml("paper.yml");
-        value = yamlBool(paper, "world-settings.default.anti-xray.enabled", "settings.anti-xray.enabled");
-        if (value != null) {
-            return value;
-        }
-        YamlConfiguration world = env.yaml("world/paper-world.yml");
-        return yamlBool(world, "anticheat.anti-xray.enabled");
     }
 
     private void checkFloodgatePosture(List<Finding> l) {
@@ -1061,18 +1142,6 @@ final class AuditEngine {
         return path.replace(File.separatorChar, '/');
     }
 
-    private static Boolean yamlBool(YamlConfiguration yaml, String... paths) {
-        if (yaml == null) {
-            return null;
-        }
-        for (String path : paths) {
-            if (yaml.contains(path)) {
-                return yaml.getBoolean(path, false);
-            }
-        }
-        return null;
-    }
-
     private void add(List<Finding> l, String id, String cat, Severity sev, String title, String detail, String fix, Object... args) {
         String t = Messages.finding(id, "title", title, args);
         String d = Messages.finding(id, "detail", detail, args);
@@ -1094,6 +1163,24 @@ final class AuditEngine {
             return new Finding(f.id, f.category, s, f.title, f.detail, f.fix, f.area);
         } catch (IllegalArgumentException ex) {
             return f; // unknown severity name - keep the default
+        }
+    }
+
+    static final class AntiXrayState {
+        final boolean present;
+        final Boolean enabled;
+        final Integer engineMode;
+        final String source;
+
+        AntiXrayState(boolean present, Boolean enabled, Integer engineMode, String source) {
+            this.present = present;
+            this.enabled = enabled;
+            this.engineMode = engineMode;
+            this.source = source == null ? "" : source;
+        }
+
+        static AntiXrayState absent() {
+            return new AntiXrayState(false, null, null, "");
         }
     }
 

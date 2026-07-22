@@ -1,7 +1,10 @@
 package es.cobayka.bulwark;
 
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Properties;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -46,6 +49,57 @@ public class AuditEngineHelpersTest {
     public void logFindingsNeverAffectConfigGrade() {
         Finding f = new Finding("log-jndi-probe", "log", Severity.HIGH, "title", "detail", "fix");
         assertFalse(AuditEngine.graded(f));
+    }
+
+    @Test
+    public void newVerificationChecksStayAdvisoryEvenWhenSeverityChanges() {
+        assertFalse(AuditEngine.graded(new Finding("backup-readiness", "advisory-tools", Severity.HIGH, "title", "detail", "fix")));
+        assertFalse(AuditEngine.graded(new Finding("anti-xray-posture", "reliability", Severity.HIGH, "title", "detail", "fix")));
+        assertFalse(AuditEngine.graded(new Finding("permission-summary", "advisory-tools", Severity.HIGH, "title", "detail", "fix")));
+    }
+
+    @Test
+    public void backupReadinessUsesKnownBackupPluginCatalog() {
+        assertTrue(AuditEngine.backupReadinessMissing(new PluginRegistry(new LinkedHashSet<String>())));
+        assertFalse(AuditEngine.backupReadinessMissing(new PluginRegistry(
+                new LinkedHashSet<String>(Arrays.asList("drivebackupv2")))));
+    }
+
+    @Test
+    public void antiXrayPostureIsVersionAwareAndAdvisoryOnly() {
+        YamlConfiguration modernDisabled = new YamlConfiguration();
+        modernDisabled.set("anticheat.anti-xray.enabled", false);
+        AuditEngine.AntiXrayState disabled = AuditEngine.antiXrayState(modernDisabled,
+                "paper-world-defaults.yml", "anticheat.anti-xray");
+        assertEquals("anti-xray.enabled=false", AuditEngine.antiXrayPostureProblem(disabled));
+
+        YamlConfiguration legacyWeak = new YamlConfiguration();
+        legacyWeak.set("world-settings.default.anti-xray.enabled", true);
+        legacyWeak.set("world-settings.default.anti-xray.engine-mode", 1);
+        AuditEngine.AntiXrayState weak = AuditEngine.antiXrayState(legacyWeak,
+                "paper.yml", "world-settings.default.anti-xray");
+        assertEquals("anti-xray.enabled=true with engine-mode=1", AuditEngine.antiXrayPostureProblem(weak));
+
+        YamlConfiguration strong = new YamlConfiguration();
+        strong.set("anticheat.anti-xray.enabled", true);
+        strong.set("anticheat.anti-xray.engine-mode", 2);
+        assertEquals("", AuditEngine.antiXrayPostureProblem(AuditEngine.antiXrayState(strong,
+                "paper-world-defaults.yml", "anticheat.anti-xray")));
+
+        assertFalse(AuditEngine.antiXrayState(new YamlConfiguration(),
+                "paper-world-defaults.yml", "anticheat.anti-xray").present);
+    }
+
+    @Test
+    public void permissionSummaryListsOnlyRawRelevantNodes() {
+        String summary = AuditEngine.permissionSummary(Arrays.asList(
+                new CommandSurface.Entry("stop", "minecraft", "minecraft.command.stop", 1),
+                new CommandSurface.Entry("home", "Essentials", "essentials.home", 2),
+                new CommandSurface.Entry("plugman", "PlugManX", "plugman.admin", 3)), 1);
+
+        assertTrue(summary.contains("minecraft.command.stop"));
+        assertTrue(summary.contains("+1 more"));
+        assertFalse(summary.contains("essentials.home"));
     }
 
     @Test

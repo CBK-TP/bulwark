@@ -79,10 +79,6 @@ findings:
     title: "Kein Anti-Cheat erkannt"
     detail: "Bulwark auditiert die Konfiguration, nicht das Cheaten im Spiel. Es wurde kein Anti-Cheat-Plugin gefunden."
     fix: "Erwäge Grim (kostenlos) oder Vulcan, falls Spieler auf diesem Server cheaten können."
-  gap-no-backup:
-    title: "Kein Backup-Plugin erkannt"
-    detail: "Es wurde kein Backup-Plugin gefunden. (Du kannst weiterhin per Host-Snapshots oder Cron sichern - dies prüft nur auf ein Plugin.)"
-    fix: "Erwäge ein Backup-Plugin oder stelle sicher, dass Backups auf andere Weise laufen."
   gap-no-logging:
     title: "Kein Änderungs-Logger erkannt"
     detail: "Es wurde kein Block-/Inventar-Logger gefunden, daher kannst du Grief und Diebstahl nachträglich weder rückgängig machen noch nachverfolgen."
@@ -135,10 +131,6 @@ findings:
     detail: "Sensible Kommando-Labels existieren in der Kommandokarte ({0}). Wenn Tab-Complete fuer Spieler offen ist, koennen diese Namen sichtbar werden, auch wenn Ausfuehrung permission-geschuetzt bleibt."
     fix: "Wenn Kommando-Geheimhaltung wichtig ist, beschraenke Tab-Complete-Vorschlaege ueber Plattform oder Permissions."
     title: "Tab-Complete kann sensible Kommandos zeigen"
-  anti-xray-off-public-survival:
-    detail: "Bulwark konnte Papers Anti-Xray-Einstellung lesen; sie ist deaktiviert, während das aktive Profil public-survival ist. Bulwark ersetzt kein Anti-Cheat, aber das ist ein sinnvoller Posture-Check für Survival-Server."
-    fix: "Aktiviere Paper Anti-Xray, wenn Erz-Sichtbarkeit auf diesem Server wichtig ist, und teste Engine-Modus und Performance vor Produktion."
-    title: "Paper Anti-Xray ist für ein öffentliches Survival-Profil aus"
   floodgate-key-readable:
     detail: "{0} kann von anderen lokalen Benutzern gelesen werden. Floodgate-Schlüssel authentifizieren Bedrock-Identity-Forwarding; geleakte Schlüssel vergrößern Spoofing-Auswirkungen."
     fix: "Beschränke den Schlüssel so, dass nur der Minecraft-Serverbenutzer ihn lesen kann, und rotiere ihn bei Verdacht auf Offenlegung."
@@ -367,6 +359,18 @@ findings:
     detail: "bukkit.yml settings.connection-throttle={0} deaktiviert Bukkit's reconnect delay pro IP. Auf einem Standalone-Server macht das Join-Floods billiger; Bulwark unterdrueckt diesen Fund bei konfiguriertem Proxy-Forwarding, weil Proxy-Backends das oft absichtlich deaktivieren."
     fix: "Setze settings.connection-throttle auf einen positiven Wert wie 4000, sofern dieser Server kein Backend hinter einem korrekt per Firewall geschuetzten Proxy ist."
     title: "Connection throttle ist deaktiviert"
+  backup-readiness:
+    detail: "Bulwark hat kein bekanntes Backup-Plugin gefunden. Das ist nur eine lokale Plugin-Pruefung; Host-Snapshots, Panel-Backups oder Cronjobs ausserhalb des Servers koennen trotzdem existieren."
+    fix: "Halte regelmaessige Off-site-Backups vor und teste Wiederherstellungen. Wenn Backups ausserhalb von Minecraft laufen, dokumentiere das ausserhalb der Plugin-Liste."
+    title: "Keine Backup-Evidenz in Plugins gefunden"
+  anti-xray-posture:
+    detail: "{0} meldet {1}. Dadurch koennen Erzpositionen fuer X-Ray-Clients sichtbar werden; Bulwark meldet es nur als Hinweis, weil Anti-Xray eine Performance- oder Gameplay-Abwaegung sein kann."
+    fix: "Wenn Erzschutz wichtig ist, aktiviere Paper Anti-Xray und teste engine-mode 2 fuer diese Minecraft/Paper-Version. Sonst dokumentiere den Grund und ignoriere diesen Hinweis."
+    title: "Paper Anti-Xray sollte geprueft werden"
+  permission-summary:
+    detail: "Bulwark hat rohe Permission-Nodes in sensiblen Command-Metadaten gefunden: {0}. Das ist nur informativ; es beweist nicht, dass ein Spieler oder eine Gruppe diese Rechte aktuell hat."
+    fix: "Pruefe diese Nodes in deinem Permission-Plugin und teste die effektiven Rechte mit einem Nicht-Staff-Account."
+    title: "Permission-Nodes bei sensiblen Commands gefunden"
   rcon-enabled:
     detail: "Remote-Konsole ist an. Selbst mit einem starken Passwort ist ein offener RCON-Port ein Fernsteuerungs-Risiko."
     fix: "Schütze den RCON-Port per Firewall, sodass nur du ihn erreichst, oder deaktiviere ihn, wenn er ungenutzt ist."

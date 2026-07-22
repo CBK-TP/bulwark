@@ -79,10 +79,6 @@ findings:
     title: "Aucun anti-cheat détecté"
     detail: "Bulwark audite la configuration, pas la triche en jeu. Aucun plugin anti-cheat n'a été trouvé."
     fix: "Envisage Grim (gratuit) ou Vulcan si des joueurs peuvent tricher sur ce serveur."
-  gap-no-backup:
-    title: "Aucun plugin de sauvegarde détecté"
-    detail: "Aucun plugin de sauvegarde n'a été trouvé. (Tu peux toujours sauvegarder via des snapshots de l'hôte ou cron - ceci ne vérifie que la présence d'un plugin.)"
-    fix: "Envisage un plugin de sauvegarde, ou assure-toi que les sauvegardes tournent d'une autre façon."
   gap-no-logging:
     title: "Aucun enregistreur de modifications détecté"
     detail: "Aucun enregistreur de blocs/inventaires n'a été trouvé, donc tu ne peux ni annuler ni retracer le grief et le vol après coup."
@@ -139,10 +135,6 @@ findings:
     detail: "Des labels sensibles existent dans la command map ({0}). Si tab-complete est ouvert aux joueurs, ces noms peuvent fuiter meme quand l'execution reste protegee par permissions."
     fix: "Si le secret des commandes compte sur ce serveur, restreins les suggestions tab-complete via ta plateforme ou tes permissions."
     title: "Tab-complete peut reveler des commandes sensibles"
-  anti-xray-off-public-survival:
-    detail: "Bulwark a pu lire le réglage Anti-Xray de Paper et il est désactivé alors que le profil actif est public-survival. Bulwark ne remplace pas un anti-cheat, mais c'est un contrôle de posture utile pour un serveur survival."
-    fix: "Active Paper Anti-Xray si la visibilité des minerais compte sur ce serveur, et teste le mode moteur et l'impact performance avant production."
-    title: "Paper Anti-Xray est désactivé pour un profil survival public"
   floodgate-key-readable:
     detail: "{0} peut être lu par d'autres utilisateurs locaux. Les clés Floodgate authentifient le forwarding d'identité Bedrock, donc une clé divulguée augmente l'impact du spoofing de comptes."
     fix: "Restreins la clé pour que seul l'utilisateur du serveur Minecraft puisse la lire, et fais-la tourner si tu suspectes une exposition."
@@ -367,6 +359,18 @@ findings:
     detail: "bukkit.yml settings.connection-throttle={0} desactive le delai de reconnexion par IP de Bukkit. Sur un serveur standalone, cela rend les join-floods moins couteux; Bulwark supprime ce constat quand le forwarding proxy est configure, car les backends proxy le desactivent souvent volontairement."
     fix: "Mets settings.connection-throttle sur une valeur positive comme 4000 sauf si ce serveur est un backend derriere un proxy correctement ferme par pare-feu."
     title: "connection-throttle est desactive"
+  backup-readiness:
+    detail: "Bulwark n'a pas trouve de plugin de sauvegarde connu. Ce n'est qu'une verification locale des plugins; tu peux quand meme avoir des snapshots d'hebergeur, des sauvegardes de panel ou des cron jobs hors du serveur."
+    fix: "Garde des sauvegardes off-site regulieres et teste parfois une restauration. Si les sauvegardes sont gerees hors de Minecraft, documente-le hors de la liste des plugins."
+    title: "Aucune preuve de sauvegarde dans les plugins"
+  anti-xray-posture:
+    detail: "{0} indique {1}. Cela peut exposer les minerais aux clients x-ray; Bulwark le signale comme avis parce qu'anti-xray peut etre un choix de performance ou de gameplay."
+    fix: "Si cacher les minerais compte, active Paper Anti-Xray et teste engine-mode 2 pour cette version Minecraft/Paper. Sinon, documente la raison et ignore cet avis."
+    title: "La posture Paper Anti-Xray doit etre revue"
+  permission-summary:
+    detail: "Bulwark a trouve des nodes de permission bruts declares dans les metadonnees de commandes sensibles : {0}. C'est seulement informatif; cela ne prouve pas qu'un joueur ou groupe possede actuellement ces permissions."
+    fix: "Verifie ces nodes dans ton plugin de permissions et teste les permissions effectives avec un compte non-staff."
+    title: "Nodes de permission sur commandes sensibles"
   rcon-enabled:
     detail: "La console distante est activée. Même avec un mot de passe fort, un port RCON exposé est un risque de contrôle à distance."
     fix: "Protège le port RCON par pare-feu pour que toi seul puisses l'atteindre, ou désactive-le quand il n'est pas utilisé."

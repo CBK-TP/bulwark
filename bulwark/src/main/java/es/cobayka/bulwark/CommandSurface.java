@@ -364,8 +364,12 @@ final class CommandSurface {
         if (permission.isEmpty()) {
             return "";
         }
-        Permission p = Bukkit.getPluginManager().getPermission(permission);
-        return p == null || p.getDefault() == null ? "" : p.getDefault().name();
+        try {
+            Permission p = Bukkit.getPluginManager().getPermission(permission);
+            return p == null || p.getDefault() == null ? "" : p.getDefault().name();
+        } catch (Throwable ignored) {
+            return "";
+        }
     }
 
     private static boolean looksLikePluginManager(String value) {

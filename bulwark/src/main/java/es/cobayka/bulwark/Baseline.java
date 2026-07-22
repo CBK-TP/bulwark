@@ -84,7 +84,6 @@ final class Baseline {
         map("unsupported-exploit", "CHB-W1", "World");
         map("no-spawn-protection", "CHB-W2", "World");
         map("artifact-invalid-datapack", "CHB-W3", "World");
-        map("anti-xray-off-public-survival", "CHB-W4", "World");
         map("artifact-datapack-functions-elevated", "CHB-C5", "Access control");
         // Host & system (operating-system hardening - unique to Bulwark; the deeper ones are
         // consent-gated, see system-scan in config.yml)
@@ -111,6 +110,9 @@ final class Baseline {
         map("loader-runtime-detected", "CHB-D8", HARDENING);
         map("loader-anticheat-context", "CHB-D8", HARDENING);
         map("connection-throttle-off", "CHB-D9", HARDENING);
+        map("backup-readiness", "CHB-D10", HARDENING);
+        map("anti-xray-posture", "CHB-D11", HARDENING);
+        map("permission-summary", "CHB-D12", HARDENING);
 
         map("log-jndi-probe", "CHB-L1", HARDENING);
         map("log-watchdog-freeze", "CHB-L2", HARDENING);
