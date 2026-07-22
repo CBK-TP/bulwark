@@ -37,7 +37,7 @@ final class UpdateChecker {
     private final Notifier notifier;
     private volatile String latest;
     private volatile boolean outdated;
-    private volatile boolean notified;
+    private volatile String notifiedVersion;
     private ScheduledExecutorService exec;
 
     UpdateChecker(JavaPlugin plugin, Notifier notifier) {
@@ -90,8 +90,8 @@ final class UpdateChecker {
             if (isNewer(v, cur)) {
                 latest = v;
                 outdated = true;
-                if (!notified) {
-                    notified = true;
+                if (shouldNotify(v, notifiedVersion)) {
+                    notifiedVersion = v;
                     plugin.getLogger().warning("[updates] Bulwark " + v + " is available (you're on " + cur
                             + "). Download it from your resource page - Bulwark never auto-downloads itself.");
                     if (notifier != null) {
@@ -108,6 +108,10 @@ final class UpdateChecker {
         } catch (Exception networkOrParse) {
             // fail OPEN - an update check is best-effort, never a problem to report
         }
+    }
+
+    static boolean shouldNotify(String latest, String notifiedVersion) {
+        return latest != null && !latest.equals(notifiedVersion);
     }
 
     private String httpGet(String url) throws Exception {

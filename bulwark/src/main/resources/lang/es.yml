@@ -9,7 +9,7 @@ cmd:
   consent-error: "[BW-602] No se pudo escribir el marcador de consentimiento: {0}"
   consent-off: "Escaneo desactivado. Bulwark no leerá nada hasta que vuelvas a dar tu consentimiento."
   consent-on: "Escaneo autorizado."
-  consent-on-detail: "Bulwark leerá la configuración de este servidor y los ajustes del host (permisos, usuario del sistema, JVM); es de solo lectura y nada sale de esta máquina."
+  consent-on-detail: "Bulwark leera la configuracion de este servidor, ajustes del host y logs que pueden contener PII como chat, nombres, IPs y comandos; solo lectura, local."
   consent-on-run: "Ejecuta {0} para ver tu nota; revócalo cuando quieras con {1}."
   consent-removed-config: "Se eliminó el marcador de consentimiento, pero scan-consent sigue en true en config.yml."
   consent-removed-hint: "Ponlo en false ahí (y luego /bulwark reload) para detener el escaneo por completo."
@@ -18,7 +18,7 @@ cmd:
   report-fail: "No se pudo escribir el archivo del informe."
   report-md: "Markdown para compartir: "
   report-saved: "Informe guardado: {0}"
-  usage: "Uso: /{0} <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload>"
+  usage: "Uso: /{0} <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload>"
   badge-write-failed: "No se pudo escribir el archivo del badge."
   commands-duplicates-short: "Etiquetas sensibles duplicadas: {0}"
   commands-empty: "Ninguna entrada de comandos coincide con esta vista."
@@ -38,7 +38,7 @@ cmd:
   consent-grade-revoke: "Ejecuta {0} para ver tu nota; revócalo cuando quieras con {1}."
   consent-marker-removed: "Se eliminó el marcador de consentimiento, pero scan-consent sigue en true en config.yml."
   consent-set-false: "Ponlo en false ahí (y luego /bulwark reload) para detener el escaneo por completo."
-  consent-what: "Bulwark leerá la configuración de este servidor y los ajustes del host (permisos, usuario del sistema, JVM); es de solo lectura y nada sale de esta máquina."
+  consent-what: "Bulwark leera la configuracion de este servidor, ajustes del host y logs que pueden contener PII como chat, nombres, IPs y comandos; solo lectura, local."
   consent-write-error: "No se pudo escribir el marcador de consentimiento: {0}"
   report-markdown: "Markdown para compartir: {0}"
   report-write-failed: "No se pudo escribir el archivo del informe."
@@ -56,6 +56,15 @@ cmd:
   inventory-header: "Inventario Minecraft: {0} plugin(s), {1} mod(s), {2} datapack(s), {3} resource pack(s), {4} jar(s) en raíz, {5} archivo(s) de arranque"
   inventory-hint: "Usa {0} para ver el inventario completo."
   inventory-more: "...y {0} más."
+  logaudit-clean: "No se encontraron senales conocidas de salud del log en la muestra."
+  logaudit-consent: "Ejecuta {0} primero. Permite leer configuracion, datos del host y logs que pueden contener PII como chat, nombres, IPs y comandos."
+  logaudit-empty: "No habia lineas de log disponibles en la muestra."
+  logaudit-example: "ejemplo: {0}"
+  logaudit-grade-safe: "La auditoria de logs es informativa y nunca cambia la nota A-F de configuracion."
+  logaudit-header: "Auditoria de logs: {0} linea(s) muestreadas, {1} senal(es), {2} tipo(s), {3} fuente(s), {4} byte(s){5}"
+  logaudit-more: "...y {0} tipo(s) de senal mas."
+  logaudit-not-authorized: "La auditoria de logs aun no esta autorizada."
+  logaudit-truncated: " (truncado)"
   artifact-advisory-off: "Las comprobaciones externas de advisories están apagadas. Pon advisory.enabled=true y luego /bulwark reload."
   artifact-check: "Comprobación de advisories para {0}:"
   artifact-configs: "Archivos de configuración de {0}:"
@@ -64,7 +73,7 @@ cmd:
   artifact-not-found: "Artefacto no encontrado: {0}"
   artifact-restart: "Reinicia el servidor para aplicar el estado del loader limpiamente."
   artifact-usage: "Uso: /bulwark artifact <info|configs|check> <name|path>"
-  usage-free: "Uso: /{0} <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload>"
+  usage-free: "Uso: /{0} <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload>"
 findings:
   gap-no-anticheat:
     title: "No se detecta ningún anti-cheat"
@@ -163,9 +172,65 @@ findings:
     fix: "Confirma en el firewall o panel que solo el proxy puede alcanzar este puerto backend."
     title: "La exposición del backend proxy no se puede probar localmente"
   consent-needed:
-    detail: "Bulwark aún no ha escaneado nada. Necesita tu consentimiento, una sola vez, antes de leer la configuración de este servidor y los ajustes del host; todo es de solo lectura y nada sale nunca de la máquina."
+    detail: "Bulwark aun no ha escaneado nada. Necesita tu consentimiento antes de leer configuracion, ajustes del host y logs. Los logs pueden contener PII como chat, nombres, IPs y comandos; todo es local y de solo lectura."
     fix: "Ejecuta /bulwark consent para autorizar el escaneo (puedes revocarlo cuando quieras con /bulwark consent off)."
     title: "El escaneo aún no está autorizado"
+  log-auth-failed:
+    detail: "El log contiene fallos de login o verificacion de sesion. En poca cantidad es normal; en rafagas puede indicar bots o problemas de cuentas."
+    fix: "Cruza esto con la tasa de conexiones y la configuracion de proxy antes de actuar."
+    title: "Fallo de autenticacion en el log"
+  log-command-issued:
+    detail: "La muestra contiene lineas de ejecucion de comandos. Es normal, pero ayuda al revisar actividad sospechosa."
+    fix: "Revisa el origen del comando en contexto y protege los logs porque pueden contener acciones privadas del staff."
+    title: "Linea de comando ejecutado"
+  log-file-missing:
+    detail: "Bulwark no pudo leer logs/latest.log. La auditoria de logs queda inactiva y no afecta a la nota de seguridad."
+    fix: "Comprueba que el servidor escribe logs/latest.log y que el usuario del proceso puede leerlo."
+    title: "No se pudo leer latest.log"
+  log-jndi-probe:
+    detail: "Una linea contiene un lookup literal ${jndi:. Los servidores modernos suelen neutralizarlo, pero sigue siendo una senal de ataque de alta confianza."
+    fix: "Confirma que Java y el servidor estan soportados, manten la mitigacion en servidores antiguos y revisa el origen de la linea."
+    title: "Lookup estilo Log4Shell en el log"
+  log-operators-load-failed:
+    detail: "El servidor no pudo cargar la lista de operadores. El estado de acceso del staff podria no ser el esperado."
+    fix: "Valida la sintaxis de ops.json y sus permisos, luego reinicia o recarga con cuidado."
+    title: "No se pudo cargar la lista de operadores"
+  log-paper-crash-report:
+    detail: "Paper imprimio su banner de crash-report. La muestra contiene evidencia de crash o ruta fatal del watchdog."
+    fix: "Lee el crash report indicado por Paper y revisa los plugins mencionados justo antes del banner."
+    title: "Banner de crash de Paper encontrado"
+  log-player-moved-too-quickly:
+    detail: "El servidor registro moved-too-quickly. Es solo un sintoma; lag, teleports, elytra y plugins pueden dispararlo."
+    fix: "Usalo como contexto para ajustar el anti-cheat, no como prueba de trampas ni disparador de castigo."
+    title: "Anomalia de movimiento en el log"
+  log-player-moved-wrongly:
+    detail: "El servidor registro moved-wrongly. Puede ocurrir con lag, teleports, vehiculos o colisiones raras."
+    fix: "Tratalo solo como senal operativa; no actues sin evidencia viva del anti-cheat."
+    title: "Correccion de movimiento en el log"
+  log-plugin-enable-error:
+    detail: "Un plugin lanzo error durante el enable. Puede dejar protecciones cargadas a medias o ausentes."
+    fix: "Revisa el plugin mencionado, actualizalo o retiralo hasta que arranque limpio."
+    title: "Plugin fallo durante enable"
+  log-plugin-exception:
+    detail: "Se registro una excepcion de plugin. Un mismo stack puede llenar muchas lineas, asi que Bulwark cuenta solo las senales detectadas."
+    fix: "Mira el plugin alrededor de la excepcion y reproduce con builds actuales de plugin y servidor."
+    title: "Excepcion de plugin en el log"
+  log-plugin-load-error:
+    detail: "El servidor no pudo cargar un jar de plugin. Si era de seguridad o dependencia, el servidor puede quedar expuesto."
+    fix: "Comprueba version del jar, dependencias y compatibilidad Java/Minecraft; reinicia tras corregirlo."
+    title: "Jar de plugin no pudo cargar"
+  log-server-overloaded:
+    detail: "Minecraft registro el aviso can't-keep-up. Es sintoma de lag de ticks, hardware saturado o trabajo pesado de plugins/mundo."
+    fix: "Cruza con jugadores y cambios recientes; perfila antes de tocar ajustes al azar."
+    title: "Aviso de sobrecarga del servidor"
+  log-watchdog-freeze:
+    detail: "El servidor registro un tick demasiado largo. Suele indicar parada dura, tarea de plugin descontrolada o carga severa del mundo."
+    fix: "Inspecciona la hora de la linea, captura timings/spark y revisa cambios recientes de plugins o datapacks."
+    title: "Freeze de watchdog registrado"
+  log-whitelist-load-failed:
+    detail: "El servidor no pudo cargar la whitelist. El control de acceso puede no coincidir con la postura privada esperada."
+    fix: "Valida whitelist.json y permisos, luego confirma que la whitelist se aplica."
+    title: "No se pudo cargar la whitelist"
   console-all-permissions:
     detail: "console.has-all-permissions=true da a la consola (y a cualquier plugin que ejecute comandos como la consola) todos los permisos, saltándose las comprobaciones de permisos de los plugins. Si un plugin lleva entrada no confiable a la consola, ahí tienes una vía de escalada de privilegios."
     fix: "Pon console.has-all-permissions=false para que la consola respete los permisos de los plugins."
@@ -298,6 +363,10 @@ findings:
     detail: "bukkit.yml settings.query-plugins=true hace que el protocolo de query (habilitado) reparta tu lista exacta de plugins y sus versiones, algo que los atacantes usan para identificar plugins con vulnerabilidades conocidas en tu servidor."
     fix: "Pon query-plugins=false en bukkit.yml, o desactiva el protocolo de query por completo con enable-query=false en server.properties."
     title: "La query expone la lista completa de plugins"
+  connection-throttle-off:
+    detail: "bukkit.yml settings.connection-throttle={0} desactiva la espera de reconexion por IP de Bukkit. En un servidor standalone abarata los join-floods; Bulwark suprime este hallazgo cuando hay forwarding de proxy configurado porque los backends suelen desactivarlo a proposito."
+    fix: "Pon settings.connection-throttle en un valor positivo como 4000 salvo que este servidor sea un backend detras de un proxy bien cerrado por firewall."
+    title: "connection-throttle esta desactivado"
   rcon-enabled:
     detail: "La consola remota está activada. Incluso con una contraseña fuerte, un puerto de RCON expuesto es un riesgo de control remoto."
     fix: "Cierra el puerto de RCON por firewall para que solo tú puedas alcanzarlo, o desactívalo cuando no lo uses."

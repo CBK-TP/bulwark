@@ -47,6 +47,15 @@ advisory:
   modrinth: true
   github-advisories: true
   timeout-ms: 5000
+
+# One-shot log audit used by /bulwark logaudit. Reads only a bounded tail of logs/latest.log and,
+# on demand, the newest rotated .log.gz with byte and time caps. No tailing, no scheduler, no webhook.
+log-audit:
+  max-bytes: 262144
+  max-lines: 500
+  include-rotated: true
+  max-gzip-bytes: 8388608
+  gzip-deadline-ms: 2000
 # Numbers used by some checks.
 thresholds:
   # Warn when there are more than this many server operators (ops).
@@ -59,15 +68,15 @@ thresholds:
   rcon-min-password: 12
 
 # Scan consent (opt-in). Bulwark reads NOTHING until you authorize it - neither this server's
-# own config nor the host (file permissions, the OS user it runs as, JVM heap vs. RAM). Every
-# read is local and read-only, and nothing ever leaves the machine.
+# own config, nor the host (file permissions, OS user, JVM heap vs. RAM), nor logs that may
+# contain PII such as chat, player names, IPs and commands. Every read is local and read-only.
 # Authorize in-game with /bulwark consent (or set this true here, then /bulwark reload).
 scan-consent: false
 
 # Finding IDs to SKIP entirely (silence). Full list of IDs:
 #   no-server-properties, offline-mode, offline-mode-login, offline-mode-proxy,
 #   rcon-no-password, rcon-weak-password, rcon-enabled, query-enabled,
-#   query-plugins, insecure-chat, no-whitelist, whitelist-not-enforced, no-rate-limit,
+#   query-plugins, insecure-chat, no-whitelist, whitelist-not-enforced, no-rate-limit, connection-throttle-off,
 #   no-spawn-protection, high-view-distance, high-simulation-distance, many-operators,
 #   bungeecord-mode, velocity-no-secret, unsupported-exploit, watchdog-off,
 #   watchdog-max-tick, old-java, log4shell, duplicate-plugins, plugin-trust-drift,

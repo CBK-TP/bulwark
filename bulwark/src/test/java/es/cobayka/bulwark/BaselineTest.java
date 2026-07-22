@@ -22,12 +22,15 @@ public class BaselineTest {
         assertEquals("CHB-W2", Baseline.code("no-spawn-protection"));
         assertEquals("CHB-H3", Baseline.code("process-as-root"));
         assertEquals("CHB-D1", Baseline.code("no-rate-limit"));
+        assertEquals("CHB-D9", Baseline.code("connection-throttle-off"));
+        assertEquals("CHB-L1", Baseline.code("log-jndi-probe"));
     }
 
     @Test
     public void positiveAreaMappingsStayStable() {
         assertEquals("Authentication", Baseline.area("offline-mode"));
         assertEquals("Host", Baseline.area("process-as-root"));
+        assertEquals(Baseline.HARDENING, Baseline.area("log-jndi-probe"));
         assertEquals("", Baseline.code("totally-unknown-id"));
     }
 
@@ -43,7 +46,8 @@ public class BaselineTest {
                 "no-spawn-protection",
                 "process-as-root",
                 "no-rate-limit",
-                "high-view-distance");
+                "high-view-distance",
+                "connection-throttle-off");
 
         for (String id : sample) {
             String code = Baseline.code(id);

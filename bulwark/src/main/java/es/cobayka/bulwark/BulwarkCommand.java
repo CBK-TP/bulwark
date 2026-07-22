@@ -12,7 +12,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /** /bulwark - run an audit, see the full list, save a report, or reload the config. */
 final class BulwarkCommand implements CommandExecutor, TabCompleter {
@@ -76,6 +79,8 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
                 return doInventory(sender, args);
             case "commands":
                 return doCommands(sender, args);
+            case "logaudit":
+                return doLogAudit(sender);
             case "posture":
             case "profile":
                 return doPosture(sender);
@@ -86,7 +91,7 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.GREEN + Messages.t("cmd.reloaded", "Bulwark config reloaded."));
                 return true;
             default:
-                sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.usage-free", "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload>", label));
+                sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.usage-free", "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload>", label));
                 return true;
         }
     }
@@ -182,6 +187,71 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.commands-usage", "Usage: /bulwark commands [summary|risky|duplicates|all]"));
+        return true;
+    }
+
+    private boolean doLogAudit(CommandSender sender) {
+        if (!plugin.consented()) {
+            sender.sendMessage(ChatColor.YELLOW + Messages.t("cmd.logaudit-not-authorized", "Log audit isn't authorized yet."));
+            sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.logaudit-consent", "Run {0} first. It permits reading config, host data and logs that may contain PII such as chat, player names, IPs and commands.",
+                    ChatColor.WHITE + "/bulwark consent" + ChatColor.GRAY));
+            return true;
+        }
+        LogTail.LogScanResult scan = plugin.logTail().scan();
+        Map<String, LogBucket> buckets = new LinkedHashMap<>();
+        int signals = 0;
+        if (scan.missingLatest) {
+            addLogBucket(buckets, LogLineClassifier.missingLatest(scan.failure), "");
+            signals++;
+        }
+        for (String line : scan.lines) {
+            Optional<Finding> f;
+            try {
+                f = LogLineClassifier.classify(line);
+            } catch (Throwable ignored) {
+                continue;
+            }
+            if (f.isPresent()) {
+                signals++;
+                addLogBucket(buckets, f.get(), Redactor.redact(line));
+            }
+        }
+        List<LogBucket> sorted = new ArrayList<>(buckets.values());
+        Collections.sort(sorted, (a, b) -> {
+            int s = a.finding.severity.ordinal() - b.finding.severity.ordinal();
+            if (s != 0) {
+                return s;
+            }
+            return b.count - a.count;
+        });
+        String truncated = scan.truncated ? Messages.t("cmd.logaudit-truncated", " (truncated)") : "";
+        sender.sendMessage(ChatColor.AQUA + Messages.t("cmd.logaudit-header",
+                "Log audit: {0} line(s) sampled, {1} signal(s), {2} type(s), {3} source(s), {4} byte(s){5}",
+                scan.lines.size(), signals, sorted.size(), scan.sources, scan.bytesRead, truncated));
+        if (sorted.isEmpty()) {
+            if (scan.lines.isEmpty()) {
+                sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.logaudit-empty", "No log lines were available in the sampled tail."));
+            } else {
+                sender.sendMessage(ChatColor.GREEN + Messages.t("cmd.logaudit-clean", "No known log health signals found in the sampled tail."));
+            }
+            return true;
+        }
+        int shown = 0;
+        for (LogBucket b : sorted) {
+            if (shown++ >= 12) {
+                sender.sendMessage(ChatColor.DARK_GRAY + Messages.t("cmd.logaudit-more", "...and {0} more signal type(s).", sorted.size() - 12));
+                break;
+            }
+            Finding f = b.finding;
+            String code = Baseline.code(f.id);
+            String suffix = code.isEmpty() ? "" : ChatColor.DARK_GRAY + " " + code;
+            sender.sendMessage(f.severity.color + "  [" + f.severity.label + "] " + f.title + ChatColor.GRAY + " x" + b.count + suffix);
+            sender.sendMessage(ChatColor.GRAY + "    " + f.fix);
+            if (!b.example.isEmpty()) {
+                sender.sendMessage(ChatColor.DARK_GRAY + "    " + Messages.t("cmd.logaudit-example", "example: {0}", b.example));
+            }
+        }
+        sender.sendMessage(ChatColor.DARK_GRAY + Messages.t("cmd.logaudit-grade-safe", "Log audit is advisory and never changes the A-F config grade."));
         return true;
     }
 
@@ -325,7 +395,7 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
                 marker.createNewFile();
             }
             sender.sendMessage(ChatColor.GREEN + Messages.t("cmd.consent-on", "Scanning authorized."));
-            sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.consent-on-detail", "Bulwark will read this server's config and the host settings (permissions, OS user, JVM) - read-only, nothing leaves this machine."));
+            sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.consent-on-detail", "Bulwark will read this server's config, host settings and logs that may contain PII such as chat, player names, IPs and commands - read-only, local only."));
             sender.sendMessage(ChatColor.GRAY + Messages.t("cmd.consent-on-run", "Run {0} to see your grade; revoke any time with {1}.",
                     ChatColor.WHITE + "/bulwark" + ChatColor.GRAY, ChatColor.WHITE + "/bulwark consent off" + ChatColor.GRAY));
         } catch (Exception ex) {
@@ -338,7 +408,7 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1 && sender.hasPermission("bulwark.admin")) {
             List<String> out = new ArrayList<>();
-            for (String option : Arrays.asList("run", "full", "report", "badge", "consent", "trust", "inventory", "commands", "posture", "artifact", "reload", "help")) {
+            for (String option : Arrays.asList("run", "full", "report", "badge", "consent", "trust", "inventory", "commands", "logaudit", "posture", "artifact", "reload", "help")) {
                 if (option.startsWith(args[0].toLowerCase())) {
                     out.add(option);
                 }
@@ -391,6 +461,18 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
             return out;
         }
         return Collections.emptyList();
+    }
+
+    private static void addLogBucket(Map<String, LogBucket> buckets, Finding finding, String example) {
+        LogBucket b = buckets.get(finding.id);
+        if (b == null) {
+            buckets.put(finding.id, new LogBucket(finding, example));
+        } else {
+            b.count++;
+            if (b.example.isEmpty() && example != null && !example.isEmpty()) {
+                b.example = example;
+            }
+        }
     }
 
     private static String trustLine(PluginTrust.Delta d) {
@@ -476,5 +558,17 @@ final class BulwarkCommand implements CommandExecutor, TabCompleter {
             b.append(args[i]);
         }
         return b.toString();
+    }
+
+    private static final class LogBucket {
+        final Finding finding;
+        int count;
+        String example;
+
+        LogBucket(Finding finding, String example) {
+            this.finding = finding;
+            this.count = 1;
+            this.example = example == null ? "" : example;
+        }
     }
 }

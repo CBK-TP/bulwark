@@ -110,6 +110,22 @@ final class Baseline {
         map("profile-private-whitelist-open", "CHB-C1", "Access control");
         map("loader-runtime-detected", "CHB-D8", HARDENING);
         map("loader-anticheat-context", "CHB-D8", HARDENING);
+        map("connection-throttle-off", "CHB-D9", HARDENING);
+
+        map("log-jndi-probe", "CHB-L1", HARDENING);
+        map("log-watchdog-freeze", "CHB-L2", HARDENING);
+        map("log-paper-crash-report", "CHB-L3", HARDENING);
+        map("log-server-overloaded", "CHB-L4", HARDENING);
+        map("log-player-moved-too-quickly", "CHB-L5", HARDENING);
+        map("log-player-moved-wrongly", "CHB-L6", HARDENING);
+        map("log-plugin-exception", "CHB-L7", HARDENING);
+        map("log-plugin-enable-error", "CHB-L8", HARDENING);
+        map("log-plugin-load-error", "CHB-L9", HARDENING);
+        map("log-command-issued", "CHB-L10", HARDENING);
+        map("log-auth-failed", "CHB-L11", HARDENING);
+        map("log-operators-load-failed", "CHB-L12", HARDENING);
+        map("log-whitelist-load-failed", "CHB-L13", HARDENING);
+        map("log-file-missing", "CHB-L14", HARDENING);
     }
 
     /** The CHB code for a finding id, or "" if it isn't catalogued. */

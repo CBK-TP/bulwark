@@ -19,4 +19,11 @@ public class UpdateCheckerTest {
         assertTrue(UpdateChecker.isNewer("v1.3", "1.2"));
         assertFalse(UpdateChecker.isNewer("garbage", "1.0"));
     }
+
+    @Test
+    public void shouldNotifyAgainWhenLatestVersionChanges() {
+        assertTrue(UpdateChecker.shouldNotify("1.2.0", null));
+        assertFalse(UpdateChecker.shouldNotify("1.2.0", "1.2.0"));
+        assertTrue(UpdateChecker.shouldNotify("1.2.1", "1.2.0"));
+    }
 }

@@ -35,6 +35,20 @@ public class AuditEngineHelpersTest {
     }
 
     @Test
+    public void connectionThrottleAdvisoryAvoidsProxyBackends() {
+        assertTrue(AuditEngine.connectionThrottleNeedsAdvisory(0, false));
+        assertTrue(AuditEngine.connectionThrottleNeedsAdvisory(-1, false));
+        assertFalse(AuditEngine.connectionThrottleNeedsAdvisory(0, true));
+        assertFalse(AuditEngine.connectionThrottleNeedsAdvisory(4000, false));
+    }
+
+    @Test
+    public void logFindingsNeverAffectConfigGrade() {
+        Finding f = new Finding("log-jndi-probe", "log", Severity.HIGH, "title", "detail", "fix");
+        assertFalse(AuditEngine.graded(f));
+    }
+
+    @Test
     public void parseJavaMajorHandlesCommonVersionFormats() {
         assertEquals(8, AuditEngine.parseJavaMajor("1.8.0_302"));
         assertEquals(17, AuditEngine.parseJavaMajor("17.0.1"));

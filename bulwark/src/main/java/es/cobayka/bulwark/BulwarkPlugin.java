@@ -18,6 +18,7 @@ public final class BulwarkPlugin extends JavaPlugin {
     private ArtifactControl artifacts;
     private ArtifactAdvisor advisor;
     private CommandSurface commandSurface;
+    private LogTail logTail;
 
     @Override
     public void onEnable() {
@@ -31,6 +32,7 @@ public final class BulwarkPlugin extends JavaPlugin {
         artifacts = new ArtifactControl(this, env);
         advisor = new ArtifactAdvisor(this, env);
         commandSurface = new CommandSurface(this);
+        logTail = new LogTail(this, env);
         updates = new UpdateChecker(this, null); // free: console notice only
         updates.start();
 
@@ -104,5 +106,9 @@ public final class BulwarkPlugin extends JavaPlugin {
 
     CommandSurface commandSurface() {
         return commandSurface;
+    }
+
+    LogTail logTail() {
+        return logTail;
     }
 }

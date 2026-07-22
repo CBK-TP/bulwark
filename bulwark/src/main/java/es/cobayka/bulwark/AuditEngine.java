@@ -186,7 +186,7 @@ final class AuditEngine {
         List<Finding> f = new ArrayList<>();
         f.add(new Finding("consent-needed", "reliability", Severity.INFO,
                 Messages.finding("consent-needed", "title", "Scan not authorized yet"),
-                Messages.finding("consent-needed", "detail", "Bulwark hasn't scanned anything yet. It needs your one-time consent before it reads this server's config and the host settings - everything is read-only and nothing ever leaves the machine."),
+                Messages.finding("consent-needed", "detail", "Bulwark hasn't scanned anything yet. It needs your one-time consent before it reads this server's config, host settings and logs. Logs can contain PII such as chat, player names, IPs and commands; reads are local and read-only."),
                 Messages.finding("consent-needed", "fix", "Run /bulwark consent to authorize the scan (you can revoke it any time with /bulwark consent off).")));
         return new Result(f, 0, '-', new ArrayList<AreaGrade>(),
                 Messages.t("report.scan-not-authorized", "scan not authorized"), "", false);
@@ -194,7 +194,9 @@ final class AuditEngine {
 
     /** Whether a finding counts toward the security grade (performance/reliability don't). */
     static boolean graded(Finding f) {
-        return !"performance".equals(f.category) && !"reliability".equals(f.category)
+        return !"log".equals(f.category)
+                && !f.id.startsWith("log-")
+                && !"performance".equals(f.category) && !"reliability".equals(f.category)
                 && !Baseline.HARDENING.equals(f.area);
     }
 
@@ -541,6 +543,14 @@ final class AuditEngine {
                     "Query exposes the full plugin list",
                     "bukkit.yml settings.query-plugins=true makes the (enabled) query protocol hand out your exact plugin list and versions, which attackers use to fingerprint known-vulnerable plugins on your server.",
                     "Set query-plugins=false in bukkit.yml, or turn the query protocol off entirely with enable-query=false in server.properties.");
+        }
+        int throttle = b.getInt("settings.connection-throttle", 4000);
+        if (throttle <= 0 && connectionThrottleNeedsAdvisory(throttle, behindProxy())) {
+            add(l, "connection-throttle-off", "reliability", Severity.LOW,
+                    "Connection throttle is disabled",
+                    "bukkit.yml settings.connection-throttle={0} disables Bukkit's per-IP reconnect delay. On a standalone server that makes join-floods cheaper; Bulwark suppresses this finding when proxy forwarding is configured because proxy backends often disable it deliberately.",
+                    "Set settings.connection-throttle to a positive value such as 4000 unless this server is a backend behind a correctly firewalled proxy.",
+                    throttle);
         }
     }
 
@@ -1101,6 +1111,10 @@ final class AuditEngine {
         } catch (Exception e) {
             return def;
         }
+    }
+
+    static boolean connectionThrottleNeedsAdvisory(int throttle, boolean behindProxy) {
+        return throttle <= 0 && !behindProxy;
     }
 
     private String mcVersion() {

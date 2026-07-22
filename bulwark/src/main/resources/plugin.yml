@@ -9,7 +9,7 @@ folia-supported: true
 commands:
   bulwark:
     description: Run a server security audit.
-    usage: /bulwark <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload|help>
+    usage: /bulwark <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload|help>
     aliases: [secaudit, bw]
 
 permissions:

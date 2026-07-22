@@ -26,12 +26,12 @@ cmd:
   consent-marker-removed: "Removed the consent marker, but scan-consent is still true in config.yml."
   consent-off: "Scanning disabled. Bulwark won't read anything until you consent again."
   consent-on: "Scanning authorized."
-  consent-on-detail: "Bulwark will read this server's config and the host settings (permissions, OS user, JVM) - read-only, nothing leaves this machine."
+  consent-on-detail: "Bulwark will read this server's config, host settings and logs that may contain PII such as chat, player names, IPs and commands - read-only, local only."
   consent-on-run: "Run {0} to see your grade; revoke any time with {1}."
   consent-removed-config: "Removed the consent marker, but scan-consent is still true in config.yml."
   consent-removed-hint: "Set it to false there (then /bulwark reload) to fully stop scanning."
   consent-set-false: "Set it to false there (then /bulwark reload) to fully stop scanning."
-  consent-what: "Bulwark will read this server's config and the host settings (permissions, OS user, JVM) - read-only, nothing leaves this machine."
+  consent-what: "Bulwark will read this server's config, host settings and logs that may contain PII such as chat, player names, IPs and commands - read-only, local only."
   consent-write-error: "Couldn't write the consent marker: {0}"
   no-permission: "You don't have permission to do that."
   reloaded: "Bulwark config reloaded."
@@ -41,7 +41,7 @@ cmd:
   report-saved: "Report saved: {0}"
   report-write-failed: "Could not write the report file."
   scan-not-authorized: "Scanning isn't authorized yet."
-  scan-run-consent: "Run {0} first - this reads your server config and host settings."
+  scan-run-consent: "Run {0} first - this reads server config, host settings and local logs that may contain PII."
   trust-empty: "No trusted plugin baseline yet."
   trust-empty-hint: "Current plugin jars visible: {0}. Run {1} after checking them."
   trust-more: "...and {0} more."
@@ -54,6 +54,15 @@ cmd:
   inventory-header: "Minecraft inventory: {0} plugin(s), {1} mod(s), {2} datapack(s), {3} resource pack(s), {4} root jar(s), {5} startup file(s)"
   inventory-hint: "Use {0} for the full inventory."
   inventory-more: "...and {0} more."
+  logaudit-clean: "No known log health signals found in the sampled tail."
+  logaudit-consent: "Run {0} first. It permits reading config, host data and logs that may contain PII such as chat, player names, IPs and commands."
+  logaudit-empty: "No log lines were available in the sampled tail."
+  logaudit-example: "example: {0}"
+  logaudit-grade-safe: "Log audit is advisory and never changes the A-F config grade."
+  logaudit-header: "Log audit: {0} line(s) sampled, {1} signal(s), {2} type(s), {3} source(s), {4} byte(s){5}"
+  logaudit-more: "...and {0} more signal type(s)."
+  logaudit-not-authorized: "Log audit isn't authorized yet."
+  logaudit-truncated: " (truncated)"
   artifact-advisory-off: "External advisory checks are off. Set advisory.enabled=true, then /bulwark reload."
   artifact-check: "Advisory check for {0}:"
   artifact-configs: "Config files for {0}:"
@@ -62,8 +71,8 @@ cmd:
   artifact-not-found: "Artifact not found: {0}"
   artifact-restart: "Restart the server to apply the loader state cleanly."
   artifact-usage: "Usage: /bulwark artifact <info|configs|check> <name|path>"
-  usage: "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload>"
-  usage-free: "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|posture|artifact|reload>"
+  usage: "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload>"
+  usage-free: "Usage: /{0} <run|full|report|badge|consent|trust|inventory|commands|logaudit|posture|artifact|reload>"
 findings:
   accepts-transfers:
     detail: "accepts-transfers=true lets another server hand its connected players to THIS server via the 1.20.5+ transfer packet (carrying a cookie). Only enable it if you run a transfer-based network - otherwise it widens what can reach your server and how much it trusts an upstream server."
@@ -150,9 +159,65 @@ findings:
     fix: "Confirm at the firewall or panel level that only the proxy can reach this backend port."
     title: "Proxy backend exposure cannot be proven locally"
   consent-needed:
-    detail: "Bulwark hasn't scanned anything yet. It needs your one-time consent before it reads this server's config and the host settings - everything is read-only and nothing ever leaves the machine."
+    detail: "Bulwark hasn't scanned anything yet. It needs your one-time consent before it reads this server's config, host settings and logs. Logs can contain PII such as chat, player names, IPs and commands; reads are local and read-only."
     fix: "Run /bulwark consent to authorize the scan (you can revoke it any time with /bulwark consent off)."
     title: "Scan not authorized yet"
+  log-auth-failed:
+    detail: "The log contains failed login/session verification messages. Small amounts are normal; bursts can indicate bot traffic or account issues."
+    fix: "Correlate with connection rate and proxy settings before taking action."
+    title: "Authentication failure in log"
+  log-command-issued:
+    detail: "The sample contains command execution lines. This is normal, but useful when reviewing suspicious activity."
+    fix: "Review the command source in context and keep command logs protected because they can contain private staff actions."
+    title: "Command execution line"
+  log-file-missing:
+    detail: "Bulwark could not read logs/latest.log. Log audit stays inactive and does not affect the security grade."
+    fix: "Check that the server writes logs/latest.log and that the process user can read it."
+    title: "latest.log could not be read"
+  log-jndi-probe:
+    detail: "A log line contains a literal ${jndi: lookup. Modern servers normally neutralize it, but it is still a high-confidence attack signal."
+    fix: "Confirm Java and server versions are supported, keep the mitigation flag on old 1.17-era servers, and review the source of the line."
+    title: "Log4Shell-style lookup appeared in the log"
+  log-operators-load-failed:
+    detail: "The server could not load the operator list. Staff access state may not match what you expect."
+    fix: "Validate ops.json syntax and file permissions, then restart or reload carefully."
+    title: "Operators list failed to load"
+  log-paper-crash-report:
+    detail: "Paper printed its crash-report banner. The log sample contains evidence of a server crash or fatal watchdog path."
+    fix: "Read the crash report referenced by Paper and review plugins mentioned immediately before the banner."
+    title: "Paper crash banner found"
+  log-player-moved-too-quickly:
+    detail: "The server logged moved-too-quickly. This is only a symptom; lag, teleport, elytra and plugins can trigger it."
+    fix: "Treat it as context for anti-cheat tuning, not as proof of cheating or a direct punishment trigger."
+    title: "Movement anomaly logged"
+  log-player-moved-wrongly:
+    detail: "The server logged moved-wrongly. It can happen during lag, teleport, vehicle or collision edge cases."
+    fix: "Use it as an operational signal only; never act on it without live anti-cheat evidence."
+    title: "Movement correction logged"
+  log-plugin-enable-error:
+    detail: "A plugin threw while enabling. That can leave protections partially loaded or silently missing."
+    fix: "Review the plugin named in the line, update it or remove it until it starts cleanly."
+    title: "Plugin failed during enable"
+  log-plugin-exception:
+    detail: "A plugin exception was logged. One repeated stack can spam many lines, so Bulwark counts only matched signal lines."
+    fix: "Look at the plugin named around the exception and reproduce with latest plugin/server builds."
+    title: "Plugin exception in log"
+  log-plugin-load-error:
+    detail: "The server could not load a plugin jar. A broken security or dependency plugin may leave the server exposed."
+    fix: "Check the jar version, dependencies and Java/Minecraft compatibility, then restart after fixing it."
+    title: "Plugin jar failed to load"
+  log-server-overloaded:
+    detail: "Minecraft logged the standard can't-keep-up warning. It is a symptom of tick lag, overloaded hardware or heavy plugin/world work."
+    fix: "Correlate with player count and recent changes, then profile before changing random performance settings."
+    title: "Server overload warning"
+  log-watchdog-freeze:
+    detail: "The server logged a single tick taking too long. That usually means a hard stall, runaway plugin task or severe world load."
+    fix: "Inspect the timestamp around this line, capture a timings/spark profile, and review recent plugin or datapack changes."
+    title: "Watchdog freeze was logged"
+  log-whitelist-load-failed:
+    detail: "The server could not load the whitelist. Access control may not match the intended private-server posture."
+    fix: "Validate whitelist.json syntax and file permissions, then confirm whitelist enforcement."
+    title: "Whitelist failed to load"
   console-all-permissions:
     detail: "console.has-all-permissions=true gives the console (and any plugin that runs commands as the console) every permission, bypassing plugin permission checks. If a plugin routes untrusted input to the console, that's a privilege-escalation path."
     fix: "Set console.has-all-permissions=false so the console respects plugin permissions."
@@ -297,6 +362,10 @@ findings:
     detail: "bukkit.yml settings.query-plugins=true makes the (enabled) query protocol hand out your exact plugin list and versions, which attackers use to fingerprint known-vulnerable plugins on your server."
     fix: "Set query-plugins=false in bukkit.yml, or turn the query protocol off entirely with enable-query=false in server.properties."
     title: "Query exposes the full plugin list"
+  connection-throttle-off:
+    detail: "bukkit.yml settings.connection-throttle={0} disables Bukkit's per-IP reconnect delay. On a standalone server that makes join-floods cheaper; Bulwark suppresses this finding when proxy forwarding is configured because proxy backends often disable it deliberately."
+    fix: "Set settings.connection-throttle to a positive value such as 4000 unless this server is a backend behind a correctly firewalled proxy."
+    title: "Connection throttle is disabled"
   rcon-enabled:
     detail: "Remote console is on. Even with a strong password, an exposed RCON port is a remote-control risk."
     fix: "Firewall the RCON port so only you can reach it, or disable it when unused."
