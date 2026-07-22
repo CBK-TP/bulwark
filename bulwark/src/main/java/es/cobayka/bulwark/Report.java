@@ -4,7 +4,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 /** Turns an audit result into something readable - in chat, in the console, or a file. */
 final class Report {
@@ -147,7 +152,10 @@ final class Report {
     File writeFile(AuditEngine.Result r, String stamp) {
         plugin.getDataFolder().mkdirs();
         File out = new File(plugin.getDataFolder(), "audit-" + stamp + ".txt");
-        try (PrintWriter w = new PrintWriter(out, "UTF-8")) {
+        File tmp = tmp(out);
+        PrintWriter w = null;
+        try {
+            w = writer(tmp);
             w.println(title());
             w.println(Messages.t("report.generated", "Generated: ") + stamp);
             w.println(Messages.t("report.grade-label", "Grade: ") + r.grade + " (" + r.score + "/100) - " + counts(r));
@@ -181,22 +189,43 @@ final class Report {
                 w.println("------------------------------------------------------------");
                 w.println(ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', support)));
             }
+            if (bad(w)) {
+                tmp.delete();
+                return null;
+            }
         } catch (Exception ex) {
+            tmp.delete();
             return null;
+        } finally {
+            if (w != null) {
+                w.close();
+            }
         }
-        return out;
+        return publish(tmp, out);
     }
 
     /** Writes the shareable security badge (plugins/Bulwark/badge.svg). Returns the file, or null. */
     File writeBadge(AuditEngine.Result r) {
         plugin.getDataFolder().mkdirs();
         File out = new File(plugin.getDataFolder(), "badge.svg");
-        try (PrintWriter w = new PrintWriter(out, "UTF-8")) {
+        File tmp = tmp(out);
+        PrintWriter w = null;
+        try {
+            w = writer(tmp);
             w.print(Badge.svg(r));
+            if (bad(w)) {
+                tmp.delete();
+                return null;
+            }
         } catch (Exception ex) {
+            tmp.delete();
             return null;
+        } finally {
+            if (w != null) {
+                w.close();
+            }
         }
-        return out;
+        return publish(tmp, out);
     }
 
     /**
@@ -206,7 +235,10 @@ final class Report {
     File writeMarkdown(AuditEngine.Result r, String stamp) {
         plugin.getDataFolder().mkdirs();
         File out = new File(plugin.getDataFolder(), "audit-" + stamp + ".md");
-        try (PrintWriter w = new PrintWriter(out, "UTF-8")) {
+        File tmp = tmp(out);
+        PrintWriter w = null;
+        try {
+            w = writer(tmp);
             w.println("# " + strip(title()));
             w.println();
             w.println(Messages.t("report.md-grade", "**Grade: {0} ({1}/100)** — {2}  ", r.grade, r.score, counts(r)));
@@ -254,10 +286,49 @@ final class Report {
                 w.println();
                 w.println("_" + strip(support) + "_");
             }
+            if (bad(w)) {
+                tmp.delete();
+                return null;
+            }
         } catch (Exception ex) {
+            tmp.delete();
             return null;
+        } finally {
+            if (w != null) {
+                w.close();
+            }
         }
-        return out;
+        return publish(tmp, out);
+    }
+
+    private static PrintWriter writer(File file) throws Exception {
+        return new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+    }
+
+    private static boolean bad(PrintWriter w) {
+        w.flush();
+        boolean failed = w.checkError();
+        w.close();
+        return failed || w.checkError();
+    }
+
+    private static File tmp(File out) {
+        return new File(out.getParentFile(), out.getName() + ".tmp");
+    }
+
+    private static File publish(File tmp, File out) {
+        try {
+            Files.move(tmp.toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            return out;
+        } catch (Exception noAtomic) {
+            try {
+                Files.move(tmp.toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                return out;
+            } catch (Exception ex) {
+                tmp.delete();
+                return null;
+            }
+        }
     }
 
     private void writeFindingBlock(PrintWriter w, AuditEngine.Result r, boolean advisoryOnly) {
