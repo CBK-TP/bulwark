@@ -2,6 +2,9 @@
 
 This directory is reserved for the public ruleset and fixtures.
 
-The current plugin release does not load external community rules. That is intentional until the validator, fixture format and false-positive process are ready.
+The engine is active in the current release, but it only evaluates the ruleset **bundled inside the jar**.
+External rule files placed here (or in `plugins/Bulwark/rules/`) are **not loaded yet** — that stays off until
+the fixture format and the false-positive review process are ready to take contributions.
 
-Rules will be declarative YAML. They will not execute scripts or modify server files.
+Rules are declarative YAML. They never execute scripts, reach the network, or modify server files.
+See `docs/rule-authoring.md` for the format and the guarantees.

@@ -50,7 +50,7 @@ Command aliases: `/bulwark`, `/bw`, `/secaudit`.
 ```text
 bulwark/             Free plugin source
 docs/                Public user and maintainer docs
-community-rules/     Public rules area, currently reserved for the rules engine
+community-rules/     Public rules area (engine active; bundled ruleset only, external rules not loaded yet)
 .github/             CI and issue templates
 ```
 

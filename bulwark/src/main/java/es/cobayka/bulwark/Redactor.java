@@ -13,7 +13,7 @@ final class Redactor {
     private static final String IPV4_ADDR = IPV4_OCTET + "\\." + IPV4_OCTET + "\\." + IPV4_OCTET + "\\." + IPV4_OCTET;
     private static final Pattern IPV4_MAPPED = Pattern.compile("(?i)(::ffff:)(" + IPV4_ADDR + ")(:\\d{1,5})?");
     private static final Pattern BRACKETED_IPV6 = Pattern.compile("\\[([0-9A-Za-z:.%_-]+:[0-9A-Za-z:.%_-]+)\\](?::(\\d{1,5}))?");
-    private static final Pattern IPV4 = Pattern.compile("(?<![0-9A-Fa-f:.])(" + IPV4_ADDR + ")(:\\d{1,5})?(?![0-9A-Fa-f.])");
+    private static final Pattern IPV4 = Pattern.compile("(?<![0-9A-Fa-f.])(" + IPV4_ADDR + ")(:\\d{1,5})?(?![0-9A-Fa-f.])");
 
     private Redactor() {
     }
@@ -22,40 +22,51 @@ final class Redactor {
         if (line == null || line.isEmpty()) {
             return "";
         }
+        return redactIpTokens(redactSecrets(line));
+    }
+
+    static String redactSecrets(String line) {
+        if (line == null || line.isEmpty()) {
+            return "";
+        }
         String s = WEBHOOK.matcher(line).replaceAll("[webhook-url]");
-        s = SECRET.matcher(s).replaceAll("$1=[redacted]");
-        return redactIpTokens(s);
+        return SECRET.matcher(s).replaceAll("$1=[redacted]");
     }
 
     private static String redactIpTokens(String line) {
         StringBuilder out = new StringBuilder(line.length());
         StringBuilder token = new StringBuilder();
+        int tokenStart = -1;
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
             if (Character.isWhitespace(c)) {
-                flushToken(out, token);
+                flushToken(out, token, line, tokenStart);
                 out.append(c);
+                tokenStart = -1;
             } else {
+                if (tokenStart < 0) {
+                    tokenStart = i;
+                }
                 token.append(c);
             }
         }
-        flushToken(out, token);
+        flushToken(out, token, line, tokenStart);
         return out.toString();
     }
 
-    private static void flushToken(StringBuilder out, StringBuilder token) {
+    private static void flushToken(StringBuilder out, StringBuilder token, String line, int tokenStart) {
         if (token.length() == 0) {
             return;
         }
-        out.append(redactToken(token.toString()));
+        out.append(redactToken(token.toString(), line, tokenStart));
         token.setLength(0);
     }
 
-    private static String redactToken(String token) {
+    private static String redactToken(String token, String line, int tokenStart) {
         String masked = redactMappedIpv4(token);
         masked = redactBracketedIpv6(masked);
         masked = redactPlainIpv6(masked);
-        return redactIpv4(masked);
+        return redactIpv4(masked, line, tokenStart);
     }
 
     private static String redactMappedIpv4(String token) {
@@ -108,15 +119,29 @@ final class Redactor {
         return out.toString();
     }
 
-    private static String redactIpv4(String token) {
+    private static String redactIpv4(String token, String line, int tokenStart) {
         Matcher m = IPV4.matcher(token);
         StringBuffer out = new StringBuffer(token.length());
         while (m.find()) {
             String port = m.group(2) == null ? "" : m.group(2);
+            if (looksLikeVersion(line, tokenStart + m.start(1), tokenStart + m.end(1), !port.isEmpty())) {
+                continue;
+            }
             m.appendReplacement(out, Matcher.quoteReplacement(maskIpv4(m.group(1)) + port));
         }
         m.appendTail(out);
         return out.toString();
+    }
+
+    private static boolean looksLikeVersion(String line, int start, int end, boolean hasPort) {
+        if (hasPort || line == null || start < 0 || end <= start || end > line.length()) {
+            return false;
+        }
+        String before = line.substring(Math.max(0, start - 80), start).toLowerCase(java.util.Locale.ROOT);
+        if (before.matches("(?s).*\\bdeclares\\s+\\S+\\s+$")) {
+            return true;
+        }
+        return before.matches("(?s).*\\bversion\\s*[:=]?\\s*$");
     }
 
     private static String maskIpv4(String host) {

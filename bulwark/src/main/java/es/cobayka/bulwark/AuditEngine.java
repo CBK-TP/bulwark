@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -54,9 +55,15 @@ final class AuditEngine {
         final String profile;   // one-line description of the detected environment
         final String posture;
         final boolean consented; // false = no scan was run yet (awaiting /bulwark consent)
+        final List<Finding> community;
 
         Result(List<Finding> findings, int score, char grade, List<AreaGrade> areas,
                String profile, String posture, boolean consented) {
+            this(findings, score, grade, areas, profile, posture, consented, Collections.<Finding>emptyList());
+        }
+
+        Result(List<Finding> findings, int score, char grade, List<AreaGrade> areas,
+               String profile, String posture, boolean consented, List<Finding> community) {
             this.findings = findings;
             this.score = score;
             this.grade = grade;
@@ -64,6 +71,7 @@ final class AuditEngine {
             this.profile = profile;
             this.posture = posture;
             this.consented = consented;
+            this.community = community == null ? Collections.<Finding>emptyList() : community;
         }
     }
 
@@ -84,6 +92,7 @@ final class AuditEngine {
 
         List<Finding> all = new ArrayList<>();
         Properties props = env.serverProperties();
+        MinecraftInventory.Result inventory = new MinecraftInventory(plugin, env).scan();
 
         checkPosture(props, all);
         checkServerProperties(props, all);
@@ -96,12 +105,13 @@ final class AuditEngine {
         checkRuntime(all);
         checkDuplicatePlugins(all);
         checkPluginTrust(all);
-        checkInventory(props, all);
+        checkInventory(props, inventory, all);
         // Host/system checks (file permissions, the user we run as, JVM settings) - all read-only
         // and local. These are covered by the same scan consent that gated the whole run.
         checkFilePermissions(all);
         checkSystem(all);
         checkContext(all);
+        List<Finding> communityRaw = communityRules(props, inventory);
 
         // Honour the ignore list, then apply any per-check severity overrides - both from config.
         Set<String> ignore = new HashSet<>(plugin.getConfig().getStringList("ignore"));
@@ -112,6 +122,13 @@ final class AuditEngine {
                 continue;
             }
             findings.add(applyOverride(f, overrides));
+        }
+        List<Finding> community = new ArrayList<>();
+        for (Finding f : communityRaw) {
+            if (ignore.contains(f.id)) {
+                continue;
+            }
+            community.add(applyOverride(f, overrides));
         }
 
         // Global grade + per-area sub-grades. Only SECURITY findings count toward a grade;
@@ -153,7 +170,7 @@ final class AuditEngine {
         String prof = profile.oneLine() + Messages.t("report.protections", " · protections: ") + reg.protectionsLine();
         String postureLine = posture.line();
         prof = prof + Messages.t("report.posture", " - posture: ") + postureLine;
-        Result res = new Result(findings, score, gradeOf(score), areas, prof, postureLine, true);
+        Result res = new Result(findings, score, gradeOf(score), areas, prof, postureLine, true, community);
         lastResult = res;
         return res;
     }
@@ -172,6 +189,10 @@ final class AuditEngine {
             return run();
         }
         return r;
+    }
+
+    Result cachedOrNull() {
+        return lastResult;
     }
 
     /** True once the admin has authorized scanning (config flag or a .consent marker). */
@@ -197,8 +218,10 @@ final class AuditEngine {
     static boolean graded(Finding f) {
         return !"log".equals(f.category)
                 && !f.id.startsWith("log-")
+                && !CommunityRules.CATEGORY.equals(f.category)
                 && !"performance".equals(f.category) && !"reliability".equals(f.category)
-                && !Baseline.HARDENING.equals(f.area);
+                && !Baseline.HARDENING.equals(f.area)
+                && !Baseline.COMMUNITY.equals(f.area);
     }
 
     private static char gradeOf(int score) {
@@ -708,8 +731,7 @@ final class AuditEngine {
                 delta.size(), trustSummary(delta));
     }
 
-    private void checkInventory(Properties props, List<Finding> l) {
-        MinecraftInventory.Result inv = new MinecraftInventory(plugin, env).scan();
+    private void checkInventory(Properties props, MinecraftInventory.Result inv, List<Finding> l) {
         List<String> misplaced = new ArrayList<>();
         List<String> unknown = new ArrayList<>();
         List<String> rootLoadable = new ArrayList<>();
@@ -786,6 +808,16 @@ final class AuditEngine {
                     "Loadable Minecraft artifacts are world-writable",
                     "These loadable files or folders can be modified by other OS users: {0}. That is a local supply-chain path into the server process.",
                     "Tighten file ownership and permissions so only the Minecraft server user can write to mods, datapacks, root jars and startup files.", summary(writable));
+        }
+    }
+
+    private List<Finding> communityRules(Properties props, MinecraftInventory.Result inv) {
+        try {
+            CommunityRules rules = CommunityRules.bundled(plugin);
+            CommunityRules.Context ctx = new CommunityRules.Context(inv, props, profile, posture, reg, env);
+            return rules.evaluate(ctx).findings;
+        } catch (Throwable ignored) {
+            return Collections.<Finding>emptyList();
         }
     }
 

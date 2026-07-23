@@ -30,15 +30,21 @@ report-title: "Bulwark security audit"
 security-profile: auto
 security-profile-confirmed: false
 
-# Update check - tells you (console, and on the paid tiers the webhook + panel) when a newer Bulwark
-# is out. It NEVER downloads or replaces the jar: auto-updating a jar from a URL is the exact
-# supply-chain risk Bulwark audits for, so you download the update yourself. Point 'url' at your
-# resource's version endpoint (e.g. SpigotMC https://api.spigotmc.org/legacy/update.php?resource=ID,
-# which returns the bare version; a JSON body with a "version" field also works). Blank = off.
+# Update check. mode: off, notify, download. download is opt-in and only prepares a verified Free
+# jar in the server update folder; it applies on next restart, never hot-swaps a live plugin.
+# 'check' is legacy: true maps to notify, false maps to off when mode is absent.
 updates:
+  mode: notify
   check: true
   url: ""
+  manifest-url: ""
   interval-hours: 24
+
+# Community vulnerability rules. Bundled rules are always the fallback. Remote rules are only used
+# when update=download and the signed ruleset validates cleanly.
+rules:
+  update: off
+  url: ""
 
 # Optional external advisory checks. Disabled by default because checks send jar hashes and names
 # to public services when an admin explicitly runs /bulwark artifact check <name>.

@@ -3,6 +3,8 @@ package es.cobayka.bulwark;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+
 /**
  * Bulwark - reads the server's own config and reports its security posture.
  * It only reads; it never changes anything.
@@ -33,7 +35,7 @@ public final class BulwarkPlugin extends JavaPlugin {
         advisor = new ArtifactAdvisor(this, env);
         commandSurface = new CommandSurface(this);
         logTail = new LogTail(this, env);
-        updates = new UpdateChecker(this, null); // free: console notice only
+        updates = new UpdateChecker(this, null, true); // free: console notice only
         updates.start();
 
         PluginCommand command = getCommand("bulwark");
@@ -72,8 +74,12 @@ public final class BulwarkPlugin extends JavaPlugin {
         if (updates != null) {
             updates.stop();
         }
-        updates = new UpdateChecker(this, null);
+        updates = new UpdateChecker(this, null, true);
         updates.start();
+    }
+
+    File installedJarFile() {
+        return getFile();
     }
 
     AuditEngine.Result audit() {

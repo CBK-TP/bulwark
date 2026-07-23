@@ -20,6 +20,7 @@ final class Baseline {
 
     /** Advisory area - shown separately, never affects the grade. */
     static final String HARDENING = "Hardening";
+    static final String COMMUNITY = "Community";
     static final String OTHER = "Other";
 
     private static final Map<String, String> CODE = new HashMap<>();

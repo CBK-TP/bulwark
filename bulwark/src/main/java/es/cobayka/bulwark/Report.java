@@ -100,6 +100,7 @@ final class Report {
                 to.sendMessage(ChatColor.GRAY + "  " + ChatColor.GREEN + "↑ " + ChatColor.GRAY + win);
             }
         }
+        sendCommunity(to, r, full);
         sendSupport(to);
     }
 
@@ -184,6 +185,7 @@ final class Report {
                     w.println();
                 }
             }
+            writeCommunityText(w, r);
             String support = plugin.getConfig().getString("support-message", "");
             if (support != null && !support.isEmpty()) {
                 w.println("------------------------------------------------------------");
@@ -279,6 +281,7 @@ final class Report {
                 writeFindingBlock(w, r, false);
                 writeFindingBlock(w, r, true);
             }
+            writeCommunityMarkdown(w, r);
 
             String support = plugin.getConfig().getString("support-message", "");
             if (support != null && !support.isEmpty()) {
@@ -351,6 +354,59 @@ final class Report {
         }
         if (!advisoryOnly) {
             w.println();
+        }
+    }
+
+    private void sendCommunity(CommandSender to, AuditEngine.Result r, boolean full) {
+        if (r.community.isEmpty()) {
+            return;
+        }
+        to.sendMessage(ChatColor.AQUA + Messages.t("report.community-title", "Community rules (advisory)"));
+        int shown = 0;
+        for (Finding f : r.community) {
+            if (!full && f.severity == Severity.INFO) {
+                continue;
+            }
+            if (!full && shown >= 6) {
+                to.sendMessage(ChatColor.GRAY + Messages.t("report.community-more", "...and more community-rule findings. Use /bulwark full or /bulwark report."));
+                break;
+            }
+            to.sendMessage(f.severity.color + "[" + f.severity.label + "] " + ChatColor.WHITE + f.title);
+            to.sendMessage(ChatColor.GRAY + "  " + f.detail);
+            to.sendMessage(ChatColor.DARK_GRAY + "  " + Messages.t("report.fix-label", "Fix: ") + ChatColor.GRAY + f.fix);
+            shown++;
+        }
+        to.sendMessage(ChatColor.DARK_GRAY + Messages.t("report.community-grade-safe", "Community rules are advisory and never change the A-F grade."));
+    }
+
+    private void writeCommunityText(PrintWriter w, AuditEngine.Result r) {
+        if (r.community.isEmpty()) {
+            return;
+        }
+        w.println("------------------------------------------------------------");
+        w.println(Messages.t("report.community-title", "Community rules (advisory)"));
+        for (Finding f : r.community) {
+            w.println("[" + f.severity.label + "] " + f.title + "   id: " + f.id);
+            w.println("  " + f.detail);
+            w.println("  Fix: " + f.fix);
+            w.println();
+        }
+        w.println(Messages.t("report.community-grade-safe", "Community rules are advisory and never change the A-F grade."));
+    }
+
+    private void writeCommunityMarkdown(PrintWriter w, AuditEngine.Result r) {
+        if (r.community.isEmpty()) {
+            return;
+        }
+        w.println();
+        w.println(Messages.t("report.md-community", "## Community rules (advisory)"));
+        w.println();
+        w.println(Messages.t("report.community-grade-safe", "Community rules are advisory and never change the A-F grade."));
+        w.println();
+        for (Finding f : r.community) {
+            w.println("- **[" + f.severity.label + "]** " + strip(f.title));
+            w.println("  - " + strip(f.detail));
+            w.println("  - " + Messages.t("report.md-fix", "**Fix:** ") + strip(f.fix));
         }
     }
 

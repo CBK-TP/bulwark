@@ -1,0 +1,171 @@
+# Parked for strict v1: these advisories are documented, but the current matcher cannot
+# distinguish every Minecraft-qualified mod filename/version form without false positives.
+ruleset:
+  id: bulwark-community-parked
+  version: 2026.07.23.1
+  minEngine: 1
+
+rules:
+  - id: community.mod.integratedscripting-rce-1-19-2-ghsa-2v5x-4823-hq77
+    severity: critical
+    category: community-rules
+    title: "IntegratedScripting 1.19.2 build matches arbitrary code execution advisory"
+    detail: "This IntegratedScripting branch is in the vulnerable Java-reflection sandbox escape range."
+    fix: "Update IntegratedScripting for Minecraft 1.19.2 to 1.0.10 or newer."
+    sources:
+      - "https://github.com/CyclopsMC/IntegratedScripting/security/advisories/GHSA-2v5x-4823-hq77"
+    when:
+      artifact:
+        names: ["IntegratedScripting", "Integrated Scripting"]
+        type: mod
+        version:
+          prefix: "1.19.2-"
+          range: "<= 1.19.2-1.0.9"
+
+  - id: community.mod.integratedscripting-rce-1-20-1-ghsa-2v5x-4823-hq77
+    severity: critical
+    category: community-rules
+    title: "IntegratedScripting 1.20.1 build matches arbitrary code execution advisory"
+    detail: "This IntegratedScripting branch is in the vulnerable Java-reflection sandbox escape range."
+    fix: "Update IntegratedScripting for Minecraft 1.20.1 to 1.0.13 or newer."
+    sources:
+      - "https://github.com/CyclopsMC/IntegratedScripting/security/advisories/GHSA-2v5x-4823-hq77"
+    when:
+      artifact:
+        names: ["IntegratedScripting", "Integrated Scripting"]
+        type: mod
+        version:
+          prefix: "1.20.1-"
+          range: "<= 1.20.1-1.0.11"
+
+  - id: community.mod.integratedscripting-rce-1-21-1-ghsa-2v5x-4823-hq77
+    severity: critical
+    category: community-rules
+    title: "IntegratedScripting 1.21.1 build matches arbitrary code execution advisory"
+    detail: "This IntegratedScripting branch is in the vulnerable Java-reflection sandbox escape range."
+    fix: "Update IntegratedScripting for Minecraft 1.21.1 to 1.0.17 or newer."
+    sources:
+      - "https://github.com/CyclopsMC/IntegratedScripting/security/advisories/GHSA-2v5x-4823-hq77"
+    when:
+      artifact:
+        names: ["IntegratedScripting", "Integrated Scripting"]
+        type: mod
+        version:
+          prefix: "1.21.1-"
+          range: "<= 1.21.1-1.0.16"
+
+  - id: community.mod.integratedscripting-rce-1-21-4-ghsa-2v5x-4823-hq77
+    severity: critical
+    category: community-rules
+    title: "IntegratedScripting 1.21.4 build matches arbitrary code execution advisory"
+    detail: "This IntegratedScripting branch is in the vulnerable Java-reflection sandbox escape range."
+    fix: "Update IntegratedScripting for Minecraft 1.21.4 to 1.0.9-254 or newer."
+    sources:
+      - "https://github.com/CyclopsMC/IntegratedScripting/security/advisories/GHSA-2v5x-4823-hq77"
+    when:
+      artifact:
+        names: ["IntegratedScripting", "Integrated Scripting"]
+        type: mod
+        version:
+          prefix: "1.21.4-"
+          range: "<= 1.21.4-1.0.9-244"
+
+  - id: community.mod.cc-tweaked-imds-ssrf-ghsa-7p4w-mv69-2wm2
+    severity: high
+    category: community-rules
+    title: "CC-Tweaked version matches cloud metadata SSRF advisory"
+    detail: "This CC-Tweaked version is older than the IMDS filtering fix."
+    fix: "Update CC-Tweaked to the patched build for your Minecraft branch and review HTTP API exposure on cloud-hosted servers."
+    sources:
+      - "https://github.com/cc-tweaked/CC-Tweaked/security/advisories/GHSA-7p4w-mv69-2wm2"
+    when:
+      any:
+        - artifact:
+            names: ["CC-Tweaked", "cc-tweaked", "ComputerCraft"]
+            type: mod
+            version:
+              prefix: "1.20.1-"
+              range: "< 1.20.1-1.106.0"
+        - artifact:
+            names: ["CC-Tweaked", "cc-tweaked", "ComputerCraft"]
+            type: mod
+            version:
+              prefix: "1.19.4-"
+              range: "< 1.19.4-1.106.0"
+        - artifact:
+            names: ["CC-Tweaked", "cc-tweaked", "ComputerCraft"]
+            type: mod
+            version:
+              prefix: "1.19.2-"
+              range: "< 1.19.2-1.101.3"
+        - artifact:
+            names: ["CC-Tweaked", "cc-tweaked", "ComputerCraft"]
+            type: mod
+            version:
+              prefix: "1.18.2-"
+              range: "< 1.18.2-1.101.3"
+        - artifact:
+            names: ["CC-Tweaked", "cc-tweaked", "ComputerCraft"]
+            type: mod
+            version:
+              prefix: "1.16.5-"
+              range: "< 1.16.5-1.101.3"
+
+  - id: community.mod.opencomputers-imds-ssrf-ghsa-vvfj-xh7c-j2cm
+    severity: high
+    category: community-rules
+    title: "OpenComputers version matches cloud metadata SSRF advisory"
+    detail: "This OpenComputers version is in the affected Internet Card default filtering range."
+    fix: "Update OpenComputers to 1.8.3 or newer, disable Internet Card features, or harden the OpenComputers internet blacklist."
+    sources:
+      - "https://github.com/MightyPirates/OpenComputers/security/advisories/GHSA-vvfj-xh7c-j2cm"
+    when:
+      artifact:
+        names: ["OpenComputers", "opencomputers"]
+        type: mod
+        version:
+          range: ">= 1.2.0 < 1.8.3"
+
+  - id: community.mod.mcwebserver-path-traversal-ghsa-gcvq-42cx-r46q
+    severity: high
+    category: community-rules
+    title: "McWebserver version matches path traversal advisory"
+    detail: "This McWebserver version can expose server-readable files through HTTP path traversal."
+    fix: "Update McWebserver to 0.2.0 or newer, or remove the mod from production servers."
+    sources:
+      - "https://github.com/J-onasJones/McWebserver/security/advisories/GHSA-gcvq-42cx-r46q"
+    when:
+      any:
+        - artifact:
+            names: ["McWebserver", "mcwebserver"]
+            type: mod
+            loader: Fabric
+            version:
+              range: "<= 0.1.2.1"
+        - artifact:
+            names: ["McWebserver", "mcwebserver"]
+            type: mod
+            loader: Quilt
+            version:
+              range: "<= 0.1.2.1"
+        - artifact:
+            names: ["McWebserver", "mcwebserver"]
+            type: mod
+            loader: Forge
+            version:
+              range: "<= 0.1.1"
+
+  - id: community.mod.cc-family-version-unknown
+    severity: info
+    category: community-rules
+    title: "Computer mod version could not be verified"
+    detail: "Bulwark found a computer-style mod with no parseable version. This is not treated as vulnerable, but it blocks advisory matching."
+    fix: "Check the mod file name or metadata manually and update if it is behind the current upstream release."
+    sources:
+      - "https://github.com/cc-tweaked/CC-Tweaked/security/advisories/GHSA-7p4w-mv69-2wm2"
+    when:
+      artifact:
+        names: ["CC-Tweaked", "cc-tweaked", "OpenComputers", "opencomputers"]
+        type: mod
+        version:
+          versionUnknown: true

@@ -1,0 +1,72 @@
+ruleset:
+  id: bulwark-community
+  version: 2026.07.23.1
+  minEngine: 1
+
+rules:
+  - id: community.plugin.triton.console-command-ghsa-8vj5-jccf-q25r
+    severity: high
+    category: community-rules
+    title: "Triton version/config matches console command execution advisory"
+    detail: "This Triton version is in a vulnerable range and its proxy bridge is enabled."
+    fix: "Update Triton to 3.8.4+ or 3.7.5+, or disable bungeecord mode if it is not needed."
+    sources:
+      - "https://github.com/tritonmc/Triton/security/advisories/GHSA-8vj5-jccf-q25r"
+    when:
+      all:
+        - plugin:
+            names: ["Triton", "TritonMC"]
+            type: plugin
+            version:
+              any:
+                - "<= 3.7.4"
+                - ">= 3.8.0 <= 3.8.3"
+        - yamlConfig:
+            path: "plugins/Triton/config.yml"
+            key: "bungeecord"
+            equals: "true"
+
+  - id: community.plugin.geyser-jwt-impersonation-cve-2021-39177
+    severity: high
+    category: community-rules
+    title: "Geyser version matches login impersonation advisory"
+    detail: "This Geyser build is older than the patched login JWT handling release."
+    fix: "Update Geyser to 1.4.2-SNAPSHOT or newer, and keep Java online-mode/auth posture reviewed."
+    sources:
+      - "https://github.com/GeyserMC/Geyser/security/advisories/GHSA-h77f-xxx7-4858"
+    when:
+      plugin:
+        names: ["Geyser", "Geyser-Spigot", "Geyser-Bukkit"]
+        type: plugin
+        version:
+          range: "< 1.4.2"
+
+  - id: community.plugin.geyser-head-texture-ssrf-cve-2026-42188
+    severity: low
+    category: community-rules
+    title: "Geyser version matches player-head SSRF advisory"
+    detail: "This Geyser version can be exposed to server-side requests through crafted Bedrock player-head texture data."
+    fix: "Update Geyser to 2.9.3 or newer."
+    sources:
+      - "https://github.com/GeyserMC/Geyser/security/advisories/GHSA-xcfg-fcr5-gw9r"
+    when:
+      plugin:
+        names: ["Geyser", "Geyser-Spigot", "Geyser-Bukkit"]
+        type: plugin
+        version:
+          range: "<= 2.9.2"
+
+  - id: community.mod.command-block-ide-function-write-cve-2024-48645
+    severity: high
+    category: community-rules
+    title: "Command Block IDE version matches function-file authorization advisory"
+    detail: "This Command Block IDE version can allow unauthenticated modification of function files on dedicated servers."
+    fix: "Update Command Block IDE to 0.4.10 or newer, or remove it from dedicated servers."
+    sources:
+      - "https://github.com/advisories/GHSA-8v69-x7hj-jwgg"
+    when:
+      artifact:
+        names: ["Command Block IDE", "command-block-ide"]
+        type: mod
+        version:
+          range: "<= 0.4.9"
